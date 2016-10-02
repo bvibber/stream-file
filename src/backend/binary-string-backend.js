@@ -10,7 +10,7 @@ class BinaryStringBackend extends DownloadBackend {
   }
 
   onXHRProgress() {
-    const slice = this.xhr.responseText.slice(this._lastPosition);
+    const slice = this.xhr.responseText.slice(this.bytesRead);
     if (slice.length > 0) {
       this.bytesRead += slice.length;
       this.bus.emit('buffer', slice);
