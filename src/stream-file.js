@@ -201,16 +201,10 @@ class StreamFile {
    */
   buffer(nbytes, cancelToken) {
     return new Promise((resolve, reject) => {
-      if (!this.loaded) {
-        throw new Error('cannot buffer when not loaded');
-      } else if (this.buffering) {
-        throw new Error('cannot buffer while buffering');
-      } else if (this.seeking) {
-        throw new Error('cannot buffer while seeking');
-      } else if (nbytes !== (nbytes | 0)) {
-        throw new Error('read with invalid byte count');
-      } else if (nbytes <= 0) {
-        throw new Error('read with negative or 0 bytes');
+      if (!this.loaded || this.buffering || this.seeking) {
+        throw new Error('invalid state');
+      } else if (nbytes !== (nbytes | 0) || nbytes < 0) {
+        throw new Error('invalid input');
       }
       const end = this._clampToLength(this.offset + nbytes);
       const readable = end - this.offset;
@@ -263,16 +257,10 @@ class StreamFile {
    * @returns {ArrayBuffer} - between 0 and nbytes of data, inclusive
    */
   readSync(nbytes) {
-    if (!this.loaded) {
-      throw new Error('cannot read when not loaded');
-    } else if (this.seeking) {
-      throw new Error('cannot read while seeking');
-    } else if (this.buffering) {
-      throw new Error('cannot read while buffering');
-    } else if (nbytes !== (nbytes | 0)) {
-      throw new Error('cannot read invalid byte count');
-    } else if (nbytes < 0) {
-      throw new Error('cannot read negative bytes');
+    if (!this.loaded || this.buffering || this.seeking) {
+      throw new Error('invalid state');
+    } else if (nbytes !== (nbytes | 0) || nbytes < 0) {
+      throw new Error('invalid input');
     }
     return this._cache.read(nbytes);
   }
