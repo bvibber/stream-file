@@ -92,6 +92,28 @@ describe('BufferCacheItem', function() {
       }
     }
   });
+  describe('readBytes', function() {
+    it('should return the expected bytes', function() {
+      const len = 16;
+      const buffer = byteBuffer(len);
+      const sourceBytes = new Uint8Array(buffer);
+      const offsets = [0, 1, 13, 16, 637483];
+
+      for (let offset of offsets) {
+        const item = new BufferCacheItem(offset, buffer);
+        for (let start = 0; start < len; start++) {
+          for (let end = start; end < len; end++) {
+            const sublen = end - start;
+            const dest = new Uint8Array(sublen);
+            item.readBytes(dest, start + offset, end + offset);
+            assert.deepEqual(dest,
+              sourceBytes.slice(start, end),
+              "offset " + offset + "; start " + start + "; end " + end);
+          }
+        }
+      }
+    });
+  });
 });
 
 describe('StringCacheItem', function() {
@@ -105,6 +127,29 @@ describe('StringCacheItem', function() {
         assert.equal(item.contains(offset), expected);
       }
     }
+  });
+  describe('readBytes', function() {
+    it('should return the expected bytes', function() {
+      const len = 16;
+      const buffer = byteBuffer(len);
+      const sourceBytes = new Uint8Array(buffer);
+      const string = stringBuffer(len);
+      const offsets = [0, 1, 13, 16, 637483];
+
+      for (let offset of offsets) {
+        const item = new StringCacheItem(offset, string);
+        for (let start = 0; start < len; start++) {
+          for (let end = start; end < len; end++) {
+            const sublen = end - start;
+            const dest = new Uint8Array(sublen);
+            item.readBytes(dest, start + offset, end + offset);
+            assert.deepEqual(dest,
+              sourceBytes.slice(start, end),
+              "offset " + offset + "; start " + start + "; end " + end);
+          }
+        }
+      }
+    });
   });
 });
 
