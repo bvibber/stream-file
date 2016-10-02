@@ -156,7 +156,7 @@ class CachePool {
       cursor = this.writeCursor;
     }
 
-    if (cursor.end <= item.end || cursor.eof) {
+    if (item.end < cursor.end || cursor.eof) {
       this.split(cursor, item.end);
       cursor = this.writeCursor;
     }

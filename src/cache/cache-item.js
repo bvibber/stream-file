@@ -23,22 +23,21 @@ class CacheItem {
 
   /**
    * Replace this item in the linked list chain with
-   * the given single or pair of nodes, which may include this one.
+   * the given single or pair of nodes.
    */
   replace(a, b=a) {
-    const prev = this.prev;
-    const next = this.next;
-
-    if (prev && prev.end !== a.start) {
-      throw new Error('replace a does not match prev');
+    if (this.start !== a.start) {
+      throw new Error('replace a does not match start');
     }
-    if (next && next.start !== b.end) {
-      throw new Error('replace b does not match next');
+    if (this.end !== b.end && !(this.eof && b.eof)) {
+      throw new Error('replace b does not match end');
     }
     if (a !== b && a.end !== b.start) {
       throw new Error('replace a does not match b');
     }
 
+    const prev = this.prev;
+    const next = this.next;
     this.prev = null;
     this.next = null;
     if (prev) {

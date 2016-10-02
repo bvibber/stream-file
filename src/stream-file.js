@@ -178,6 +178,7 @@ class StreamFile {
           this.abort();
         }
         this._cache.seekRead(offset);
+        this._cache.seekWrite(offset);
         this.seeking = true;
         this._openBackend(cancelToken).then(() => {
           this.seeking = false;
