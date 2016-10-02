@@ -162,20 +162,14 @@ class StreamFile {
    */
   seek(offset, cancelToken) {
     return new Promise((resolve, reject) => {
-      if (!this.loaded) {
-        throw new Error('cannot seek when not loaded');
-      } else if (this.buffering) {
-        throw new Error('cannot seek while buffering');
-      } else if (this.seeking) {
-        throw new Error('cannot seek while seeking');
-      } else if (!this.seekable) {
-        throw new Error('seek on non-seekable stream');
-      } else if (offset !== (offset | 0)) {
-        throw new Error('seek to non-integer offset');
-      } else if (offset < 0) {
-        throw new Error('seek to negative offset');
+      if (!this.loaded || this.buffering || this.seeking) {
+        throw new Error('invalid state');
+      } else if (offset !== (offset | 0) || offset < 0) {
+        throw new Error('invalid input');
       } else if (this.length >= 0 && offset >= this.length) {
         throw new Error('seek past end of file');
+      } else if (!this.seekable) {
+        throw new Error('seek on non-seekable stream');
       } else {
         if (this._backend) {
           // @todo if a short seek forward, just keep reading?
@@ -192,6 +186,39 @@ class StreamFile {
         });
       }
     });
+  }
+
+  /**
+   * Read up to the requested number of bytes, or until end of file is reached,
+   * and advance the read head.
+   *
+   * May wait on network activity if data is not yet available.
+   *
+   * @param {number} nbytes - max number of bytes to read
+   * @returns {ArrayBuffer} - between 0 and nbytes of data, inclusive
+   */
+  read(nbytes, cancelToken) {
+    return this.buffer(nbytes, cancelToken).then(() => {
+      return this.readSync(nbytes);
+    });
+  }
+
+  /**
+   * Read up to the requested number of bytes, or however much is available
+   * in the buffer until the next empty segment, and advance the read head.
+   *
+   * Returns immediately.
+   *
+   * @param {number} nbytes - max number of bytes to read
+   * @returns {ArrayBuffer} - between 0 and nbytes of data, inclusive
+   */
+  readSync(nbytes) {
+    if (!this.loaded || this.buffering || this.seeking) {
+      throw new Error('invalid state');
+    } else if (nbytes !== (nbytes | 0) || nbytes < 0) {
+      throw new Error('invalid input');
+    }
+    return this._cache.read(nbytes);
   }
 
   /**
@@ -230,39 +257,6 @@ class StreamFile {
         })
       }
     });
-  }
-
-  /**
-   * Read up to the requested number of bytes, or until end of file is reached,
-   * and advance the read head.
-   *
-   * May wait on network activity if data is not yet available.
-   *
-   * @param {number} nbytes - max number of bytes to read
-   * @returns {ArrayBuffer} - between 0 and nbytes of data, inclusive
-   */
-  read(nbytes, cancelToken) {
-    return this.buffer(nbytes, cancelToken).then(() => {
-      return this.readSync(nbytes)
-    });
-  }
-
-  /**
-   * Read up to the requested number of bytes, or however much is available
-   * in the buffer until the next empty segment, and advance the read head.
-   *
-   * Returns immediately.
-   *
-   * @param {number} nbytes - max number of bytes to read
-   * @returns {ArrayBuffer} - between 0 and nbytes of data, inclusive
-   */
-  readSync(nbytes) {
-    if (!this.loaded || this.buffering || this.seeking) {
-      throw new Error('invalid state');
-    } else if (nbytes !== (nbytes | 0) || nbytes < 0) {
-      throw new Error('invalid input');
-    }
-    return this._cache.read(nbytes);
   }
 
   /**
