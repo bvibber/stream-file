@@ -2,6 +2,22 @@ module.exports = function(grunt) {
 
   grunt.initConfig({
     pkg: grunt.file.readJSON('package.json'),
+    babel: {
+      options: {
+          sourceMap: false,
+          presets: ['es2015']
+      },
+      lib: {
+        files: [
+          {
+            expand: true,
+            cwd: 'src/',
+            src: ['**/*.js'],
+            dest: 'lib/'
+          }
+        ]
+      }
+    },
     copy: {
       test: {
         files: [
@@ -22,31 +38,19 @@ module.exports = function(grunt) {
           }
         },
         files: {
-          'dist/stream-file.es2015.js': ['src/stream-file.js']
+          'dist/stream-file.js': ['lib/stream-file.js']
         }
       },
       polyfill: {
         files: {
-          'dist/es6-promise.js': ['src/es6-promise.js']
-        }
-      }
-    },
-    babel: {
-      options: {
-          sourceMap: true,
-          presets: ['es2015']
-      },
-      dist: {
-        files: {
-          'dist/stream-file.js': 'dist/stream-file.es2015.js'
+          'dist/es6-promise.js': ['lib/es6-promise.js']
         }
       }
     },
     uglify: {
       dist: {
         options: {
-          sourceMap: true,
-          sourceMapIn: 'dist/stream-file.js.map'
+          sourceMap: true
         },
         files: {
           'dist/stream-file.min.js': ['dist/stream-file.js']
@@ -82,9 +86,9 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-compress');
 
   grunt.registerTask('default', [
+    'babel',
     'copy',
     'browserify',
-    'babel',
     'uglify',
     'compress'
   ]);

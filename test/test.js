@@ -2,12 +2,12 @@
 
 const assert = require('assert');
 
-const CachePool = require('../src/cache/cache-pool.js');
-const CacheItem = require('../src/cache/cache-item.js');
-const EofCacheItem = require('../src/cache/eof-cache-item.js');
-const EmptyCacheItem = require('../src/cache/empty-cache-item.js');
-const BufferCacheItem = require('../src/cache/buffer-cache-item.js');
-const StringCacheItem = require('../src/cache/string-cache-item.js');
+const CachePool = require('../lib/cache/cache-pool.js');
+const CacheItem = require('../lib/cache/cache-item.js');
+const EofCacheItem = require('../lib/cache/eof-cache-item.js');
+const EmptyCacheItem = require('../lib/cache/empty-cache-item.js');
+const BufferCacheItem = require('../lib/cache/buffer-cache-item.js');
+const StringCacheItem = require('../lib/cache/string-cache-item.js');
 
 function byteBuffer(length) {
   var arr = new Uint8Array(length);

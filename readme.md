@@ -161,7 +161,7 @@ npm install stream-file
 
 The stream-file package is meant to be used in web client code via a package bundler such as [browserify](http://browserify.org/) or [webpack](http://webpack.github.io/).
 
-A few ECMAScript 2015 features are used such as the Promise class, arrow functions, and new class syntax. If you're targeting older browser versions, you will need to convert the code to ES5 and add a Promise polyfill.
+Although compiled to ES5, a few ECMAScript 2015 features are used such as the Promise class. If you're targeting older browser versions, you will need to convert the code to ES5 and add a Promise polyfill.
 
 ## node
 
