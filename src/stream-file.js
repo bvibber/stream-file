@@ -127,14 +127,16 @@ class StreamFile {
       if (this._backend) {
         resolve();
       } else {
+        const cache = this._cache;
+        const max = this._chunkSize;
+
         // Seek forward to the next unread point, up to chunk size
-        const readable = this._cache.bytesReadable(this._chunkSize);
-        const readHead = this._cache.readOffset;
-        const readTail = readHead + readable;
-        this._cache.seekWrite(readTail);
+        const readable = cache.bytesReadable(max);
+        const readTail = cache.readOffset + readable;
+        cache.seekWrite(readTail);
 
         // Do we have space to write within that chunk?
-        const writable = this._cache.bytesWritable(this._chunkSize);
+        const writable = cache.bytesWritable(max);
         if (writable == 0) {
           // Nothing to read/write within the current readahead area.
           resolve();

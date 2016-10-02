@@ -38,12 +38,11 @@ const segmentDataSet = [
 ];
 
 describe('EmptyCacheItem', function() {
-  it('should return expected size, length', function() {
+  it('should return expected start, end', function() {
     for (let [start, end, length, containsData] of segmentDataSet) {
       const item = new EmptyCacheItem(start, end);
       assert.equal(item.start, start);
       assert.equal(item.end, end);
-      assert.equal(item.length, length);
       for (let [offset, expected] of containsData) {
         assert.equal(item.contains(offset), expected);
       }
@@ -88,7 +87,6 @@ describe('BufferCacheItem', function() {
       const item = new BufferCacheItem(start, buffer);
       assert.equal(item.start, start);
       assert.equal(item.end, end);
-      assert.equal(item.length, length);
       for (let [offset, expected] of containsData) {
         assert.equal(item.contains(offset), expected);
       }
@@ -103,7 +101,6 @@ describe('StringCacheItem', function() {
       const item = new StringCacheItem(start, buffer);
       assert.equal(item.start, start);
       assert.equal(item.end, end);
-      assert.equal(item.length, length);
       for (let [offset, expected] of containsData) {
         assert.equal(item.contains(offset), expected);
       }
@@ -126,7 +123,7 @@ describe('CachePool', function() {
 
     let zeroLengthAreEmpty = true;
     for (let item in pool.head) {
-      if (item.length == 0 && !item.empty) {
+      if ((item.end - item.start) == 0 && !item.empty) {
         zeroLengthAreEmpty = false;
       }
     }

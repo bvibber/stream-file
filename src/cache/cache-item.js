@@ -1,13 +1,10 @@
-"use strict"
+"use strict";
 
 /**
- * Double-linked list of cache items
+ * Double-linked list cache items
  */
 class CacheItem {
-  constructor(start, end) {
-    if (end < start) {
-      throw new Error('end point too early');
-    }
+  constructor(start, end, buffer) {
     this.start = start;
     this.end = end;
     this.prev = null;
@@ -17,28 +14,11 @@ class CacheItem {
   }
 
   /**
-   * Length of the slice
-   */
-  get length() {
-    return this.end - this.start;
-  }
-
-  /**
    * True if this cache item contains the given byte offset.
    * False if outside.
    */
   contains(offset) {
     return (offset >= this.start) && (offset < this.end);
-  }
-
-  /**
-   * Copy a slice of bytes from this cache item into the target array.
-   * @param {Uint8Array} dest - target byte array to write to
-   * @param {number} start - offset into the virtual file to start from
-   * @param {number} end - offset into the virtual file to end at (exclusive)
-   */
-  readBytes(dest, start, end) {
-    throw new Error('abstract');
   }
 
   /**
@@ -76,13 +56,6 @@ class CacheItem {
   }
 
   /**
-   * Split an empty range into two smaller subranges
-   */
-  split(offset) {
-    throw new Error('abstract');
-  }
-
-  /**
    * Iterate forwards, returning the first element matching the callback.
    * @param {function} callback - return true for a match on item
    * @returns {CacheItem|null} - matching item or null if none found
@@ -106,10 +79,11 @@ class CacheItem {
     let last = null;
     for (let item = this; item; item = item.next) {
       if (!callback(item)) {
-        return last;
+        break;
       }
       last = item;
     }
+    return last;
   }
 }
 
