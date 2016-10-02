@@ -33,6 +33,26 @@ class StreamFile {
     this.buffering = false;
     this.seeking = false;
 
+    Object.defineProperties(this, {
+      /**
+       * Byte offset of the read head
+       */
+      offset: {
+        get: function() {
+          return this._cache.readOffset;
+        }
+      },
+
+      /**
+       * Is the read head at the end of the file?
+       */
+      eof: {
+        get: function() {
+          return this.length === this._cache.readOffset;
+        }
+      }
+    });
+
     // StreamFile public API
     this.url = url;
     this.headers = {};
@@ -63,20 +83,6 @@ class StreamFile {
     this._bus.on('cachever', () => {
       this._cachever++;
     });
-  }
-
-  /**
-   * Byte offset of the read head
-   */
-  get offset() {
-    return this._cache.readOffset;
-  }
-
-  /**
-   * Is the read head at the end of the file?
-   */
-  get eof() {
-    return this.length === this._cache.readOffset;
   }
 
   /**
