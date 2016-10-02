@@ -177,8 +177,8 @@ class CachePool {
   }
 
   split(oldItem, offset) {
-    let [a, b] = oldItem.split(offset);
-    this.replace(oldItem, a, b);
+    const items = oldItem.split(offset);
+    this.replace(oldItem, items[0], items[1]);
   }
 
   replace(oldItem, a, b=a) {

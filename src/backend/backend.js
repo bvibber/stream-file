@@ -70,8 +70,7 @@ function getXHRHeaders(xhr) {
   headerLines.forEach(function(line) {
     const bits = line.split(/:\s*/, 2);
     if (bits.length > 1) {
-      const [name, value] = bits;
-      headers[name.toLowerCase()] = value;
+      headers[bits[0].toLowerCase()] = bits[1];
     }
   });
   return headers;
