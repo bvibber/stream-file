@@ -35,7 +35,10 @@ module.exports = function(grunt) {
         options: {
           browserifyOptions: {
             standalone: 'StreamFile'
-          }
+          },
+          plugin: [
+            ['browserify-derequire']
+          ]
         },
         files: {
           'dist/stream-file.js': ['lib/stream-file.js']
