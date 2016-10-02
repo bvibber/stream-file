@@ -249,6 +249,8 @@ class StreamFile {
           const remainder = end - this._cache.writeOffset;
           if (remainder > 0) {
             return this._backend.buffer(remainder, cancelToken);
+          } else {
+            return Promise.resolve();
           }
         }).then(() => {
           this.buffering = false;

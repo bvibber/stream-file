@@ -47,12 +47,11 @@ class CachePool {
   bytesReadable(max=Infinity) {
     const offset = this.readOffset;
     const cursor = this.readCursor;
-    if (cursor.empty) {
-      return 0;
-    } else {
-      let last = cursor.last((item) => !item.empty && item.start <= offset + max);
+    let last = cursor.last((item) => !item.empty && item.start <= offset + max);
+    if (last) {
       return Math.min(max, last.end - offset);
     }
+    return 0;
   }
 
   /**
@@ -65,12 +64,12 @@ class CachePool {
     const cursor = this.writeCursor;
     if (cursor.eof) {
       return max;
-    } else if (cursor.empty) {
-      let last = cursor.last((item) => item.empty && item.start <= offset + max);
-      return Math.min(max, last.end - offset);
-    } else {
-      return 0;
     }
+    let last = cursor.last((item) => item.empty && item.start <= offset + max);
+    if (last) {
+      return Math.min(max, last.end - offset);
+    }
+    return 0;
   }
 
   /**
@@ -119,10 +118,7 @@ class CachePool {
     let readHead = start;
     let writeHead = 0;
     for (let item = this.readCursor; item; item = item.next) {
-      if (item.empty) {
-        break;
-      }
-      if (item.start >= end) {
+      if (item.empty || item.start >= end) {
         this.readOffset = readHead;
         this.readCursor = item;
         break;
@@ -134,6 +130,8 @@ class CachePool {
       item.readBytes(chunk, readHead, readTail);
       readHead = readTail;
       writeHead = writeTail;
+      this.readOffset = readTail;
+      this.readCursor = item;
     }
     return dest.buffer;
   }
