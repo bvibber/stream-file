@@ -124,7 +124,7 @@ class StreamFile {
    */
   _openBackend(cancelToken) {
     return new Promise((resolve, reject) => {
-      if (this._backend) {
+      if (this._backend || this.eof) {
         resolve();
       } else {
         const cache = this._cache;
@@ -137,7 +137,7 @@ class StreamFile {
 
         // Do we have space to write within that chunk?
         const writable = cache.bytesWritable(max);
-        if (writable == 0) {
+        if (writable === 0) {
           // Nothing to read/write within the current readahead area.
           resolve();
         } else {
@@ -168,7 +168,7 @@ class StreamFile {
         throw new Error('invalid state');
       } else if (offset !== (offset | 0) || offset < 0) {
         throw new Error('invalid input');
-      } else if (this.length >= 0 && offset >= this.length) {
+      } else if (this.length >= 0 && offset > this.length) {
         throw new Error('seek past end of file');
       } else if (!this.seekable) {
         throw new Error('seek on non-seekable stream');

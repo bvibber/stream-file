@@ -27,15 +27,32 @@ QUnit.test("quickie test", function(assert) {
     console.log(stream.headers);
     return stream.seek(1024);
   }).then(function() {
-    assert.ok('seek resolved');
+    assert.ok(true, 'seek resolved');
     assert.equal(stream.offset, 1024, 'stream seeked to expected point');
     return stream.read(65536);
   }).then(function(buffer) {
-    assert.ok('read resolved');
+    assert.ok(true, 'read resolved');
     assert.ok(buffer instanceof ArrayBuffer, 'return is ArrayBuffer');
     assert.equal(buffer.byteLength, 65536, 'read expected length in bytes');
     assert.ok(!stream.eof, 'not at eof');
     assert.ok(!stream.buffering, 'not buffering');
+    assert.ok(!stream.seeking, 'not seeking');
+    return stream.seek(stream.length);
+  }).then(function() {
+    assert.ok(true, 'seek to end resolved');
+    assert.ok(!stream.buffering, 'not buffering');
+    assert.ok(!stream.seeking, 'not seeking');
+    assert.equal(stream.offset, stream.length, 'at expected read offset');
+    assert.ok(stream.eof, 'at eof');
+    assert.equal(0, stream.bytesAvailable(), '0 bytes readable');
+    return stream.seek(0);
+  }).then(function() {
+    assert.ok(true, 'seek to start resolved');
+    assert.ok(!stream.buffering, 'not buffering');
+    assert.ok(!stream.seeking, 'not seeking');
+    assert.equal(stream.offset, 0, 'at expected read offset');
+    assert.ok(!stream.eof, 'not at eof');
+  }).then(function() {
     done();
   }).catch(function(err) {
     assert.ok(false, 'failed out early: ' + err);

@@ -144,8 +144,11 @@ class CachePool {
     let item = this.bufferItem(buffer);
     let cursor = this.writeCursor;
 
-    if (!cursor.empty || !cursor.contains(item.end)) {
-      throw new Error('no space to write');
+    if (!cursor.empty) {
+      throw new Error('write cursor not empty');
+    }
+    if (!cursor.contains(item.end) && cursor.end !== item.end) {
+      throw new Error('write cursor too small');
     }
 
     if (cursor.start < item.start) {

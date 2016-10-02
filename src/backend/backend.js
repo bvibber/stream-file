@@ -138,9 +138,14 @@ class Backend {
             }
             this.seekable = true;
           }
-          this.length = getXHRLength(this.xhr);
-          this.headers = getXHRHeaders(this.xhr);
-          this.onXHRStart();
+          if (this.xhr.status >= 200 && this.xhr.status < 300) {
+            this.length = getXHRLength(this.xhr);
+            this.headers = getXHRHeaders(this.xhr);
+            this.onXHRStart();
+          } else {
+            oncomplete();
+            reject(new Error('HTTP error ' + this.xhr.status))
+          }
         }
       };
       const checkError = () => {
