@@ -1,0 +1,51 @@
+{
+  "name": "stream-file",
+  "version": "0.1.0",
+  "description": "Buffered streaming HTTP fetch abstraction",
+  "main": "lib/stream-file.js",
+  "files": [
+    "lib/",
+    "dist/",
+    "readme.md",
+    "COPYING"
+  ],
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  },
+  "dependencies": {
+  },
+  "devDependencies": {
+    "assert": "^1.4.1",
+    "babel-preset-es2015": "^6.16.0",
+    "browserify-derequire": "^0.9.4",
+    "es6-promise": "^4.0.3",
+    "grunt": "^1.0.1",
+    "grunt-babel": "^6.0.0",
+    "grunt-browserify": "^5.0.0",
+    "grunt-contrib-compress": "^1.3.0",
+    "grunt-contrib-copy": "^1.0.0",
+    "grunt-contrib-uglify": "^2.0.0",
+    "mocha": "^3.0.2"
+  },
+  "scripts": {
+    "test": "mocha",
+    "prepublish": "grunt",
+    "build": "grunt"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/brion/stream-file.git"
+  },
+  "keywords": [
+    "http",
+    "streaming",
+    "input"
+  ],
+  "author": "Brion Vibber <brion@pobox.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/brion/stream-file/issues"
+  },
+  "homepage": "https://github.com/brion/stream-file#readme"
+}
