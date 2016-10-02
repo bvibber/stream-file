@@ -9,10 +9,8 @@ class BufferCacheItem extends CacheItem {
   }
 
   readBytes(dest, start, end) {
-    const chunk = this.string;
-    const len = end - start;
     const readHead = start - this.start;
-    const sourceBytes = new Uint8Array(this.buffer, readHead, len);
+    const sourceBytes = new Uint8Array(this.buffer, readHead, end - start);
     dest.set(sourceBytes);
   }
 }
