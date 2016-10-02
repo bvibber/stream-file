@@ -162,7 +162,7 @@ describe('CachePool', function() {
     assert.ok(pool.tail.eof, 'tail is eof');
 
     assert.ok(!!pool.readCursor, 'readCursor is present');
-    assert.ok(pool.readCursor.contains(pool.readOffset), 'readCursor fits offset');
+    assert.ok(pool.readCursor.contains(pool.readOffset), 'readCursor fits offset ');
     assert.ok(!!pool.writeCursor, 'writeCursor is present');
     assert.ok(pool.writeCursor.contains(pool.writeOffset), 'writeCursor fits offset');
 

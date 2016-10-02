@@ -229,12 +229,7 @@ class Backend {
   }
 
   onXHRStart() {
-    // Event handlers to drive output
-    this.xhr.addEventListener('progress', () => this.onXHRProgress());
-    this.xhr.addEventListener('error', () => this.onXHRError());
-    this.xhr.addEventListener('load', () => this.onXHRLoad());
-
-    this.bus.emit('open');
+    throw new Error('abstract');
   }
 }
 

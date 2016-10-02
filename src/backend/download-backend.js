@@ -27,7 +27,7 @@ class DownloadBackend extends Backend {
         }
 
         const checkBuffer = () => {
-          if (this.eof || this.offset >= end) {
+          if (this.offset >= end && !this.eof) {
             oncomplete();
             resolve();
           }

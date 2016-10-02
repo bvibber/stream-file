@@ -118,21 +118,20 @@ class CachePool {
     let readHead = start;
     let writeHead = 0;
     for (let item = this.readCursor; item; item = item.next) {
-      if (item.empty || item.start >= end) {
-        this.readOffset = readHead;
-        this.readCursor = item;
+      if (item.empty) {
         break;
       }
-      let readTail = Math.min(end, item.end);
-      let chunkLen = readTail - readHead;
-      let writeTail = writeHead + chunkLen;
-      let chunk = dest.subarray(writeHead, writeTail);
+      if (item.start >= end) {
+        break;
+      }
+      const readTail = Math.min(end, item.end);
+      const chunk = dest.subarray(readHead - start, readTail - start);
       item.readBytes(chunk, readHead, readTail);
       readHead = readTail;
-      writeHead = writeTail;
-      this.readOffset = readTail;
-      this.readCursor = item;
     }
+    this.readOffset = readHead;
+    this.readCursor = this.readCursor.first((item) => item.contains(readHead));
+
     return dest.buffer;
   }
 
