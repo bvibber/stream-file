@@ -21,6 +21,7 @@ class DownloadBackend extends Backend {
         let oncomplete = null;
         if (cancelToken) {
           cancelToken.cancel = (reason) => {
+            this.abort();
             oncomplete();
             reject(reason);
           };

@@ -118,14 +118,15 @@ class StreamFile {
   }
 
   /**
-   * If there is not already a download backend in place, create one
-   * and start it loading before resolving.
+   * Create a backend and wait for it to load.
    * @returns {Promise}
    */
   _openBackend(cancelToken) {
     return new Promise((resolve, reject) => {
-      if (this._backend || this.eof) {
-        resolve();
+      if (this._backend) {
+        resolve(this._backend);
+      } else if (this.eof) {
+        reject(new Error('cannot open at end of file'));
       } else {
         const cache = this._cache;
         const max = this._chunkSize;
@@ -141,15 +142,48 @@ class StreamFile {
           // Nothing to read/write within the current readahead area.
           resolve();
         } else {
-          this._backend = new Backend({
+          const backend = this._backend = new Backend({
             bus: this._bus,
             url: this.url,
             offset: this._cache.writeOffset,
             length: writable,
             cachever: this._cachever
           });
-          this._backend.load(cancelToken).then(resolve).catch(reject);
+          backend.load(cancelToken).then(() => {
+            if (this._backend === backend) {
+              resolve(backend);
+            } else {
+              throw new Error('unexpected backend');
+            }
+          }).catch((err) => {
+            if (this._backend === backend) {
+              this._backend = null;
+            } else {
+              throw new Error('unexpected backend');
+            }
+            reject(err);
+          });
         }
+      }
+    });
+  }
+
+  /**
+   * If we have empty space within the readahead area and there is not already
+   * a download backend in place, create one and start it loading in background.
+   * @returns {Promise}
+   */
+  _readAhead(cancelToken) {
+    return new Promise((resolve, reject) => {
+      if (this._backend || this.eof) {
+        // do nothing
+        resolve();
+      } else {
+        this._openBackend(cancelToken).then(() => {
+          resolve();
+        }).catch((err) => {
+          reject(err)
+        });
       }
     });
   }
@@ -179,14 +213,9 @@ class StreamFile {
         }
         this._cache.seekRead(offset);
         this._cache.seekWrite(offset);
-        this.seeking = true;
-        this._openBackend(cancelToken).then(() => {
-          this.seeking = false;
-          resolve();
-        }).catch((err) => {
-          this.seeking = false;
-          reject(err);
-        });
+
+        // Fire off a download if necessary.
+        this._readAhead(cancelToken).then(resolve).catch(reject);
       }
     });
   }
@@ -224,7 +253,7 @@ class StreamFile {
     const buffer = this._cache.read(nbytes);
 
     // Trigger readahead if necessary.
-    this._openBackend();
+    this._readAhead();
 
     return buffer;
   }
@@ -251,10 +280,10 @@ class StreamFile {
         this.buffering = true;
 
         // If we don't already have a backend open, start downloading.
-        this._openBackend(cancelToken).then(() => {
+        this._openBackend(cancelToken).then((backend) => {
           const remainder = end - this._cache.writeOffset;
           if (remainder > 0) {
-            return this._backend.buffer(remainder, cancelToken);
+            return backend.buffer(remainder, cancelToken);
           } else {
             return Promise.resolve();
           }
