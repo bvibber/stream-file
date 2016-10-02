@@ -221,7 +221,12 @@ class StreamFile {
     } else if (nbytes !== (nbytes | 0) || nbytes < 0) {
       throw new Error('invalid input');
     }
-    return this._cache.read(nbytes);
+    const buffer = this._cache.read(nbytes);
+
+    // Trigger readahead if necessary.
+    this._openBackend();
+
+    return buffer;
   }
 
   /**
