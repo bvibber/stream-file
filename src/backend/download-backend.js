@@ -7,14 +7,9 @@ const Backend = require('./backend.js');
  * Subclasses handle details of strings/buffers.
  */
 class DownloadBackend extends Backend {
-  /**
-   * Trigger further downloads. No-op since progressive download never
-   * stops.... don't stop downloaaaaaading...
-   * @return {Promise}
-   */
-  buffer(nbytes, cancelToken) {
+
+  bufferToOffset(end, cancelToken) {
     return new Promise((resolve, reject) => {
-      const end = this.offset + nbytes;
       if (this.eof || this.offset >= end) {
         resolve();
       } else {

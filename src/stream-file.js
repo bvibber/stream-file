@@ -306,15 +306,12 @@ class StreamFile {
 
         // If we don't already have a backend open, start downloading.
         this._openBackend(cancelToken).then((backend) => {
-          const remainder = end - this._cache.writeOffset;
-          if (remainder > 0) {
-            return backend.buffer(remainder, cancelToken);
-          } else {
-            return Promise.resolve();
-          }
+          return backend.bufferToOffset(end, cancelToken);
         }).then(() => {
+          // We might have to roll over to another download,
+          // so loop back around!
           this.buffering = false;
-          resolve();
+          this.buffer(nbytes, cancelToken).then(resolve).catch(reject);
         }).catch((err) => {
           this.buffering = false;
           reject(err);

@@ -186,14 +186,13 @@ class Backend extends TinyEvents {
   }
 
   /**
-   * Go off and wait while we download this many more bytes.
-   * May return sooner if EOF; may return later if chunks are oddly sized.
+   * Wait until we download up to the given offset, reach eof, or error out.
    * Actual data will be returned via 'buffer' events in the meantime.
    *
    * Note that MSStream backend will need this to be called explicitly,
    * while the other backends download progressively even without a call.
    */
-  buffer(nbytes, cancelToken) {
+  bufferToOffset(end, cancelToken) {
     return Promise.reject(new Error('abstract'));
   }
 

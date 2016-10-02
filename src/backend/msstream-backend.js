@@ -29,42 +29,76 @@ class MSStreamBackend extends Backend {
     this.xhr.addEventListener('readystatechange', checkProgress);
   }
 
+  waitForStream(cancelToken) {
+    return new Promise((resolve, reject) => {
+      if (this.stream) {
+        resolve(this.stream);
+      } else {
+        let oncomplete = null;
+        if (cancelToken) {
+          cancelToken.cancel = (err) => {
+            oncomplete();
+            reject(err);
+          };
+        }
+        const checkStart = () => {
+          resolve(this.stream);
+        };
+        oncomplete = () => {
+          cancelToken.cancel = () => {};
+          this.off('open', checkStart);
+        }
+        this.on('open', checkStart);
+      }
+    });
+  }
+
   /**
    * Trigger further download of bytes
    * @returns {Promise}
    */
-  buffer(nbytes, cancelToken) {
-    return new Promise((resolve, reject) => {
-      if (!this.stream) {
-        throw new Error('cannot trigger read without stream');
-      }
-      if (this.streamReader) {
-        throw new Error('cannot trigger read when reading');
-      }
-      this.streamReader = new MSStreamReader();
-      this.streamReader.onload = (event) => {
-        const buffer = event.target.result;
-        if (buffer.byteLength > 0) {
-          this.bytesRead += buffer.byteLength;
-          this.emit('buffer', buffer);
-        } else {
-          // Zero length means end of stream.
-          this.eof = true;
-          this.emit('done');
+  bufferToOffset(end, cancelToken) {
+    return this.waitForStream(cancelToken).then((stream) => {
+      return new Promise((resolve, reject) => {
+        if (this.streamReader) {
+          throw new Error('cannot trigger read when reading');
         }
-        resolve();
-      };
-      this.streamReader.onerror = () => {
-        reject(new Error('mystery error streaming'));
-      };
-      if (cancelToken) {
-        cancelToken.cancel = (reason) => {
-          this.streamReader.abort();
-          this.streamReader = null;
-          reject(reason);
-        };
-      }
-      this.streamReader.readAsArrayBuffer(this.stream, nbytes);
+        if (this.offset >= end || this.eof) {
+          resolve();
+        } else {
+          const nbytes = end - this.offset;
+          this.streamReader = new MSStreamReader();
+          this.streamReader.onload = (event) => {
+            this.streamReader = null;
+            const buffer = event.target.result;
+            if (buffer.byteLength > 0) {
+              this.bytesRead += buffer.byteLength;
+              this.emit('buffer', buffer);
+            } else {
+              // Zero length means end of stream.
+              this.eof = true;
+              this.emit('done');
+            }
+            resolve();
+          };
+          this.streamReader.onerror = () => {
+            this.streamReader = null;
+            this.stream = null;
+            this.emit('error');
+            reject(new Error('mystery error streaming'));
+          };
+          if (cancelToken) {
+            cancelToken.cancel = (reason) => {
+              this.streamReader.abort();
+              this.streamReader = null;
+              this.stream = null;
+              this.emit('error');
+              reject(reason);
+            };
+          }
+          this.streamReader.readAsArrayBuffer(stream, nbytes);
+        }
+      });
     });
   }
 
