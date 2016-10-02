@@ -23,7 +23,7 @@ class MSStreamBackend extends Backend {
         // We don't get the stream until readyState 3, and it's gone after load.
         this.stream = this.xhr.response;
         this.xhr.removeEventListener('readystatechange', checkProgress);
-        this.bus.emit('open');
+        this.emit('open');
       }
     };
     this.xhr.addEventListener('readystatechange', checkProgress);
@@ -46,11 +46,11 @@ class MSStreamBackend extends Backend {
         const buffer = event.target.result;
         if (buffer.byteLength > 0) {
           this.bytesRead += buffer.byteLength;
-          this.bus.emit('buffer', buffer);
+          this.emit('buffer', buffer);
         } else {
           // Zero length means end of stream.
           this.eof = true;
-          this.bus.emit('done');
+          this.emit('done');
         }
         resolve();
       };

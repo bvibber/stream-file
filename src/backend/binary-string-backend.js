@@ -13,7 +13,7 @@ class BinaryStringBackend extends DownloadBackend {
     const slice = this.xhr.responseText.slice(this.bytesRead);
     if (slice.length > 0) {
       this.bytesRead += slice.length;
-      this.bus.emit('buffer', slice);
+      this.emit('buffer', slice);
     }
   }
 

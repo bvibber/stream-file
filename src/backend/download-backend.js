@@ -44,15 +44,15 @@ class DownloadBackend extends Backend {
 
         oncomplete = () => {
           this.buffering = false;
-          this.bus.off('buffer', checkBuffer);
-          this.bus.off('done', checkDone);
-          this.bus.off('error', checkError);
+          this.off('buffer', checkBuffer);
+          this.off('done', checkDone);
+          this.off('error', checkError);
         };
 
         this.buffering = true;
-        this.bus.on('buffer', checkBuffer);
-        this.bus.on('done', checkDone);
-        this.bus.on('error', checkError);
+        this.on('buffer', checkBuffer);
+        this.on('done', checkDone);
+        this.on('error', checkError);
       }
     });
   }
@@ -67,7 +67,7 @@ class DownloadBackend extends Backend {
     this.xhr.addEventListener('error', () => this.onXHRError());
     this.xhr.addEventListener('load', () => this.onXHRLoad());
 
-    this.bus.emit('open');
+    this.emit('open');
   }
 
   onXHRProgress() {
@@ -75,12 +75,12 @@ class DownloadBackend extends Backend {
   }
 
   onXHRError() {
-    this.bus.emit('error');
+    this.emit('error');
   }
 
   onXHRLoad() {
     this.eof = true;
-    this.bus.emit('done');
+    this.emit('done');
   }
 
 }

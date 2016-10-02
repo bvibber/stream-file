@@ -1,5 +1,6 @@
 "use strict";
 
+const TinyEvents = require('../events');
 
 /**
  * Extract the file's total length from the XHR returned headers.
@@ -83,16 +84,17 @@ function getXHRHeaders(xhr) {
  * Subclasses handle details of chunking/strings/streams and provide
  * a unified internal API.
  *
- * Events sent to the bus:
+ * Events sent:
  * - 'open' - called when file metadata ready
  * - 'buffer' - passes a BufferSegment in with some new data
  * - 'done' - called at end of file
  * - 'error' - called in case of error
  * - 'cachever' - triggered when old Safari caching bug found
  */
-class Backend {
-  constructor({bus, url, offset, length, cachever=0}) {
-    this.bus = bus;
+class Backend extends TinyEvents {
+  constructor({url, offset, length, cachever=0}) {
+    super();
+
     this.url = url;
     this.offset = offset;
     this.length = length;
@@ -130,7 +132,7 @@ class Backend {
               console.log('Expected start at ' + this.offset + ' but got ' + foundPosition +
                 '; working around Safari range caching bug: https://bugs.webkit.org/show_bug.cgi?id=82672');
               this.cachever++;
-              this.bus.emit('cachever');
+              this.emit('cachever');
               this.abort();
               oncomplete();
               this.load(cancelToken).then(resolve).catch(reject);
@@ -166,7 +168,7 @@ class Backend {
       oncomplete = () => {
         this.xhr.removeEventListener('readystatechange', checkOpen);
         this.xhr.removeEventListener('error', checkError);
-        this.bus.off('open', checkBackendOpen);
+        this.off('open', checkBackendOpen);
         if (cancelToken) {
           cancelToken.cancel = () => {};
         }
@@ -177,7 +179,7 @@ class Backend {
       // Events for the open promise
       this.xhr.addEventListener('readystatechange', checkOpen);
       this.xhr.addEventListener('error', checkError);
-      this.bus.on('open', checkBackendOpen);
+      this.on('open', checkBackendOpen);
 
       this.xhr.send();
     });

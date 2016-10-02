@@ -65,24 +65,6 @@ class StreamFile {
     this._backend = null;
     this._cachever = 0;
     this._chunkSize = chunkSize;
-
-    this._bus = new EventEmitter();
-    this._bus.on('buffer', (buffer) => {
-      this._cache.write(buffer);
-    });
-    this._bus.on('done', () => {
-      if (this.length === -1) {
-        // save length on those final thingies
-        this.length = this._backend.offset + this._backend.bytesRead;
-      }
-      this._backend = null;
-    });
-    this._bus.on('error', () => {
-      this._backend = null;
-    });
-    this._bus.on('cachever', () => {
-      this._cachever++;
-    });
   }
 
   /**
@@ -143,26 +125,69 @@ class StreamFile {
           resolve();
         } else {
           const backend = this._backend = new Backend({
-            bus: this._bus,
             url: this.url,
             offset: this._cache.writeOffset,
             length: writable,
             cachever: this._cachever
           });
-          backend.load(cancelToken).then(() => {
-            if (this._backend === backend) {
-              resolve(backend);
-            } else {
-              throw new Error('unexpected backend');
-            }
-          }).catch((err) => {
-            if (this._backend === backend) {
+
+          let oncomplete = null;
+          if (cancelToken) {
+            cancelToken.cancel = (err) => {
               this._backend = null;
-            } else {
-              throw new Error('unexpected backend');
+              backend.abort();
+              reject(err);
             }
-            reject(err);
+          }
+
+          const checkOpen = () => {
+            if (backend !== this._backend) {
+              oncomplete();
+              reject(new Error('invalid state'));
+            } else {
+              backend.on('buffer', (buffer) => {
+                if (backend === this._backend) {
+                  this._cache.write(buffer);
+                }
+              });
+              backend.on('done', () => {
+                if (backend === this._backend) {
+                  if (this.length === -1) {
+                    // save length on those final thingies
+                    this.length = this._backend.offset + this._backend.bytesRead;
+                  }
+                  this._backend = null;
+                }
+              });
+              resolve(backend);
+            }
+          };
+
+          const checkError = (err) => {
+            if (backend !== this._backend) {
+              reject(new Error('invalid state'));
+            } else {
+              console.log('ERROR on backend');
+              this._backend = null;
+              reject(err);
+            }
+          };
+
+          oncomplete = () => {
+            backend.off('open', checkOpen);
+            backend.off('error', checkError);
+            if (cancelToken) {
+              cancelToken.cancel = () => {};
+            }
+          };
+          backend.on('open', checkOpen);
+          backend.on('error', checkError);
+          backend.on('cachever', () => {
+            console.log('CACHEVER update');
+            this._cachever++;
           });
+
+          backend.load();
         }
       }
     });

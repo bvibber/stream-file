@@ -13,7 +13,7 @@ class MozChunkedBackend extends DownloadBackend {
   onXHRProgress() {
     const buffer = this.xhr.response;
     this.bytesRead += buffer.byteLength;
-    this.bus.emit('buffer', buffer);
+    this.emit('buffer', buffer);
   }
 }
 
