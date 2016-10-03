@@ -12,10 +12,11 @@ class EmptyCacheItem extends CacheItem {
     if (!this.contains(offset)) {
       throw new Error('invalid split');
     }
-    return [
-      new EmptyCacheItem(this.start, offset),
-      new EmptyCacheItem(offset, this.end)
-    ];
+    const a = new EmptyCacheItem(this.start, offset);
+    const b = new EmptyCacheItem(offset, this.end);
+    a.next = b;
+    b.prev = a;
+    return [a, b];
   }
 }
 

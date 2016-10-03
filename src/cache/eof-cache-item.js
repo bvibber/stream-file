@@ -21,10 +21,11 @@ class EofCacheItem extends EmptyCacheItem {
     if (!this.contains(offset)) {
       throw new Error('invalid split');
     }
-    return [
-      new EmptyCacheItem(this.start, offset),
-      new EofCacheItem(offset)
-    ];
+    const a = new EmptyCacheItem(this.start, offset);
+    const b = new EofCacheItem(offset);
+    a.next = b;
+    b.prev = a;
+    return [a, b];
   }
 }
 

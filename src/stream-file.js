@@ -7,9 +7,8 @@ const Backend = require('./backend');
 /**
  * @typedef {Object} StreamFileOptions
  * @property {string} url - the URL to fetch
- * @property {number} bufferSize - internal buffer size
- * @property {number} chunkSize - max size of each chunked HTTP request
- * @property {number} cacheSize - max amount of data to keep buffered in memory
+ * @property {number} chunkSize - max size of each chunked HTTP request / readahead target
+ * @property {number} cacheSize - max amount of data to keep buffered in memory for seeks
  */
 
 /**
@@ -23,7 +22,7 @@ class StreamFile {
   constructor({
     url='',
     chunkSize=1 * 1024 * 1024,
-    cacheSize=32 * 1024 * 1024,
+    cacheSize=0,
   }) {
     // InputStream public API
     this.length = -1;
@@ -167,7 +166,6 @@ class StreamFile {
             if (backend !== this._backend) {
               reject(new Error('invalid state'));
             } else {
-              console.log('ERROR on backend');
               this._backend = null;
               reject(err);
             }
@@ -183,7 +181,6 @@ class StreamFile {
           backend.on('open', checkOpen);
           backend.on('error', checkError);
           backend.on('cachever', () => {
-            console.log('CACHEVER update');
             this._cachever++;
           });
 
@@ -337,6 +334,15 @@ class StreamFile {
       this._backend.abort();
       this._backend = null;
     }
+  }
+
+  /**
+   * Return an array of byte ranges that are buffered.
+   * Each range is a two-element array of start and end.
+   * @returns {Array<Array<number>>}
+   */
+  getBufferedRanges() {
+    return this._cache.ranges();
   }
 
   // ------

@@ -11,6 +11,12 @@ class CacheItem {
     this.next = null;
     this.eof = false;
     this.empty = false;
+    this.timestamp = Date.now();
+    Object.defineProperty(this, 'length', {
+      get: function() {
+        return this.end - this.start;
+      }
+    });
   }
 
   /**

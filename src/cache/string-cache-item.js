@@ -15,6 +15,7 @@ class StringCacheItem extends CacheItem {
     for (let i = 0; i < len; i++) {
       dest[i] = chunk.charCodeAt(readHead + i);
     }
+    this.timestamp = Date.now();
   }
 }
 

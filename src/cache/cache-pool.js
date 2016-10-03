@@ -22,7 +22,9 @@ const StringCacheItem = require('./string-cache-item.js');
  * - empty items are never adjacent to each other
  */
 class CachePool {
-  constructor() {
+  constructor({
+    cacheSize=0
+  }={}) {
     const eof = new EofCacheItem(0);
     this.head = eof;
     this.tail = eof;
@@ -30,6 +32,7 @@ class CachePool {
     this.readCursor = eof;
     this.writeOffset = 0;
     this.writeCursor = eof;
+    this.cacheSize = cacheSize;
   }
 
   /**
@@ -161,9 +164,11 @@ class CachePool {
       cursor = this.writeCursor;
     }
 
-    this.replace(cursor, item);
+    this.splice(cursor, cursor, item, item);
     this.writeOffset = item.end;
     this.writeCursor = item.next;
+
+    this.gc();
   }
 
   bufferItem(buffer) {
@@ -178,23 +183,7 @@ class CachePool {
 
   split(oldItem, offset) {
     const items = oldItem.split(offset);
-    this.replace(oldItem, items[0], items[1]);
-  }
-
-  replace(oldItem, a, b=a) {
-    oldItem.replace(a, b);
-    if (this.head === oldItem) {
-      this.head = a;
-    }
-    if (this.tail === oldItem) {
-      this.tail = b;
-    }
-    if (oldItem.contains(this.readOffset)) {
-      this.readCursor = a.contains(this.readOffset) ? a : b;
-    }
-    if (oldItem.contains(this.writeOffset)) {
-      this.writeCursor = a.contains(this.writeOffset) ? a : b;
-    }
+    this.splice(oldItem, oldItem, items[0], items[1]);
   }
 
   /**
@@ -202,19 +191,109 @@ class CachePool {
    */
   ranges() {
     let ranges = [];
-    const notEmpty = (item) => !item.empty;
 
-    // Skip any empty ranges
-    let head = this.head.first(notEmpty);
-    while (head) {
-      // Consolidate any non-empty ranges
-      let tail = head.last(notEmpty);
-      ranges.push([head.start, tail.start]);
-      head = tail.first(notEmpty);
+    for (let item = this.head; item; item = item.next) {
+      if (item.empty) {
+        continue;
+      }
+      const start = item;
+      item = item.last((i) => !i.empty);
+      ranges.push([start.start, item.end]);
     }
 
     return ranges;
   }
+
+  gc() {
+    // Simple gc: look at anything not between read head and write head,
+    // and discard the oldest items until we have room
+    let cachedBytes = 0;
+    let candidates = [];
+    for (let item = this.head; item; item = item.next) {
+      if (!item.empty) {
+        cachedBytes += item.length;
+        if (item.end < this.readOffset || item.start > this.readOffset + this.chunkSize) {
+          // Not in the 'hot' readahead range
+          candidates.push(item);
+        }
+      }
+    }
+    if (cachedBytes > this.cacheSize) {
+      candidates.sort((a, b) => {
+        return a.timestamp - b.timestamp;
+      });
+
+      for (let i = 0; i < candidates.length; i++) {
+        let item = candidates[i];
+        if (cachedBytes <= this.cacheSize) {
+          break;
+        }
+        this.remove(item);
+        cachedBytes -= item.length;
+      }
+    }
+  }
+
+  remove(item) {
+    const replacement = new EmptyCacheItem(item.start, item.end);
+    this.splice(item, item, replacement, replacement);
+    item = replacement;
+
+    // Consolidate adjacent ranges
+    if (item.prev && item.prev.empty) {
+      item = this.consolidate(item.prev);
+    }
+    if (item.next && item.next.empty && !item.next.eof) {
+      item = this.consolidate(item);
+    }
+    if (item.start === 0) {
+      this.head = item;
+    }
+  }
+
+  consolidate(first) {
+    const last = first.last((item) => item.empty && !item.eof);
+    const replacement = new EmptyCacheItem(first.start, last.end);
+    this.splice(first, last, replacement, replacement);
+    return replacement;
+  }
+
+  splice(oldHead, oldTail, newHead, newTail) {
+    if (oldHead.start !== newHead.start) {
+      throw new Error('invalid splice head');
+    }
+    if (oldTail.end !== newTail.end) {
+      if (oldTail.eof && newTail.eof) {
+        // only eof is expandable
+      } else {
+        throw new Error('invalid splice tail');
+      }
+    }
+    let prev = oldHead.prev;
+    let next = oldTail.next;
+
+    oldHead.prev = null;
+    oldTail.next = null;
+
+    if (prev) {
+      prev.next = newHead;
+      newHead.prev = prev;
+    }
+    if (next) {
+      next.prev = newTail;
+      newTail.next = next;
+    }
+
+    if (oldHead === this.head) {
+      this.head = newHead;
+    }
+    if (oldTail === this.tail) {
+      this.tail = newTail;
+    }
+    this.readCursor = this.head.first((item) => item.contains(this.readOffset));
+    this.writeCursor = this.head.first((item) => item.contains(this.writeOffset));
+  }
+
 }
 
 module.exports = CachePool;
