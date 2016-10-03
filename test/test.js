@@ -4,10 +4,6 @@ const assert = require('assert');
 
 const CachePool = require('../lib/cache/cache-pool.js');
 const CacheItem = require('../lib/cache/cache-item.js');
-const EofCacheItem = require('../lib/cache/eof-cache-item.js');
-const EmptyCacheItem = require('../lib/cache/empty-cache-item.js');
-const BufferCacheItem = require('../lib/cache/buffer-cache-item.js');
-const StringCacheItem = require('../lib/cache/string-cache-item.js');
 
 function byteBuffer(length) {
   var arr = new Uint8Array(length);
@@ -37,10 +33,10 @@ const segmentDataSet = [
   [100, 200, 100, [[0, false], [75, false], [100, true], [200, false]]]
 ];
 
-describe('EmptyCacheItem', function() {
+describe('empty CacheItem', function() {
   it('should return expected start, end', function() {
     for (let [start, end, length, containsData] of segmentDataSet) {
-      const item = new EmptyCacheItem(start, end);
+      const item = new CacheItem({start, end});
       assert.equal(item.start, start);
       assert.equal(item.end, end);
       for (let [offset, expected] of containsData) {
@@ -50,17 +46,17 @@ describe('EmptyCacheItem', function() {
   });
   describe('#head', function() {
     it('head, tail should start null', function() {
-      const first = new EmptyCacheItem(100, 200);
+      const first = new CacheItem({start: 100, end: 200});
       assert.strictEqual(first.prev, null);
       assert.strictEqual(first.next, null);
     });
   });
 });
 
-describe('EofCacheItem', function() {
+describe('Eof CacheItem', function() {
   describe('#split()', function() {
     it('should work', function() {
-      const item = new EofCacheItem(0);
+      const item = new CacheItem({eof: true});
       const [slice0to100, slice100to200] = item.split(100);
       assert.ok(slice0to100, 'slice 0-100 should exist');
       assert.ok(slice0to100.empty, 'slice 0-100 should be empty');
@@ -73,18 +69,18 @@ describe('EofCacheItem', function() {
 
 function makeChunks() {
   return [
-    new BufferCacheItem(100, byteBuffer(100)),
-    new BufferCacheItem(200, byteBuffer(100)),
-    new BufferCacheItem(300, byteBuffer(100)),
-    new BufferCacheItem(400, byteBuffer(100))
+    new CacheItem({start: 100, buffer: byteBuffer(100)}),
+    new CacheItem({start: 200, buffer: byteBuffer(100)}),
+    new CacheItem({start: 300, buffer: byteBuffer(100)}),
+    new CacheItem({start: 400, buffer: byteBuffer(100)})
   ];
 }
 
-describe('BufferCacheItem', function() {
+describe('Buffer CacheItem', function() {
   it('should return expected size, length', function() {
     for (let [start, end, length, containsData] of segmentDataSet) {
       const buffer = byteBuffer(length);
-      const item = new BufferCacheItem(start, buffer);
+      const item = new CacheItem({start, buffer});
       assert.equal(item.start, start);
       assert.equal(item.end, end);
       for (let [offset, expected] of containsData) {
@@ -100,7 +96,7 @@ describe('BufferCacheItem', function() {
       const offsets = [0, 1, 13, 16, 637483];
 
       for (let offset of offsets) {
-        const item = new BufferCacheItem(offset, buffer);
+        const item = new CacheItem({start: offset, buffer});
         for (let start = 0; start < len; start++) {
           for (let end = start; end < len; end++) {
             const sublen = end - start;
@@ -116,11 +112,11 @@ describe('BufferCacheItem', function() {
   });
 });
 
-describe('StringCacheItem', function() {
+describe('String CacheItem', function() {
   it('should return expected size, length', function() {
     for (let [start, end, length, containsData] of segmentDataSet) {
       const buffer = stringBuffer(length);
-      const item = new StringCacheItem(start, buffer);
+      const item = new CacheItem({start, string:buffer});
       assert.equal(item.start, start);
       assert.equal(item.end, end);
       for (let [offset, expected] of containsData) {
@@ -137,7 +133,7 @@ describe('StringCacheItem', function() {
       const offsets = [0, 1, 13, 16, 637483];
 
       for (let offset of offsets) {
-        const item = new StringCacheItem(offset, string);
+        const item = new CacheItem({start:offset, string});
         for (let start = 0; start < len; start++) {
           for (let end = start; end < len; end++) {
             const sublen = end - start;

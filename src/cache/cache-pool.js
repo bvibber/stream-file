@@ -1,9 +1,6 @@
 "use strict";
 
-const EofCacheItem = require('./eof-cache-item.js');
-const EmptyCacheItem = require('./empty-cache-item.js');
-const BufferCacheItem = require('./buffer-cache-item.js');
-const StringCacheItem = require('./string-cache-item.js');
+const CacheItem = require('./cache-item.js');
 
 /**
  * Seekable, readable, writable buffer cache to represent a file.
@@ -16,7 +13,7 @@ const StringCacheItem = require('./string-cache-item.js');
  *
  * Internal invariants:
  * - head and tail are always present, may be same for empty
- * - tail item is always an EofCacheItem
+ * - tail item is always empty/eof
  * - non-empty items are never 0 bytes
  * - adjacent list items are always continguous
  * - empty items are never adjacent to each other
@@ -25,7 +22,7 @@ class CachePool {
   constructor({
     cacheSize=0
   }={}) {
-    const eof = new EofCacheItem(0);
+    const eof = new CacheItem({eof: true});
     this.head = eof;
     this.tail = eof;
     this.readOffset = 0;
@@ -173,9 +170,17 @@ class CachePool {
 
   bufferItem(buffer) {
     if (buffer instanceof ArrayBuffer) {
-      return new BufferCacheItem(this.writeOffset, buffer);
+      return new CacheItem({
+        start: this.writeOffset,
+        end: this.writeOffset + buffer.byteLength,
+        buffer: buffer
+      });
     } else if (typeof buffer === 'string') {
-      return new StringCacheItem(this.writeOffset, buffer);
+      return new CacheItem({
+        start: this.writeOffset,
+        end: this.writeOffset + buffer.length,
+        string: buffer
+      });
     } else {
       throw new Error('invalid input to write');
     }
@@ -235,7 +240,10 @@ class CachePool {
   }
 
   remove(item) {
-    const replacement = new EmptyCacheItem(item.start, item.end);
+    const replacement = new CacheItem({
+      start: item.start,
+      end: item.end
+    });
     this.splice(item, item, replacement, replacement);
     item = replacement;
 
@@ -253,7 +261,10 @@ class CachePool {
 
   consolidate(first) {
     const last = first.last((item) => item.empty && !item.eof);
-    const replacement = new EmptyCacheItem(first.start, last.end);
+    const replacement = new CacheItem({
+      start: first.start,
+      end: last.end
+    });
     this.splice(first, last, replacement, replacement);
     return replacement;
   }

@@ -4,14 +4,26 @@
  * Double-linked list cache items
  */
 class CacheItem {
-  constructor(start, end, buffer) {
+  constructor({
+    buffer=undefined,
+    string=undefined,
+    start=0,
+    end=start + (buffer ? buffer.byteLength : (string ? string.length : 0)),
+    prev=null,
+    next=null,
+    eof=false,
+    empty=!(buffer||string),
+    timestamp=Date.now()
+  }={}) {
     this.start = start;
     this.end = end;
-    this.prev = null;
-    this.next = null;
-    this.eof = false;
-    this.empty = false;
-    this.timestamp = Date.now();
+    this.prev = prev;
+    this.next = next;
+    this.eof = eof;
+    this.empty = empty;
+    this.timestamp = timestamp;
+    this.buffer = buffer;
+    this.string = string;
     Object.defineProperty(this, 'length', {
       get: function() {
         return this.end - this.start;
@@ -24,40 +36,42 @@ class CacheItem {
    * False if outside.
    */
   contains(offset) {
-    return (offset >= this.start) && (offset < this.end);
+    return (offset >= this.start) && (offset < this.end || this.eof);
   }
 
-  /**
-   * Replace this item in the linked list chain with
-   * the given single or pair of nodes.
-   */
-  replace(a, b=a) {
-    if (this.start !== a.start) {
-      throw new Error('replace a does not match start');
+  readBytes(dest, start, end) {
+    const readHead = start - this.start;
+    const len = end - start;
+    if (this.buffer) {
+      const sourceBytes = new Uint8Array(this.buffer, readHead, len);
+      dest.set(sourceBytes);
+    } else if (this.string) {
+      const chunk = this.string;
+      for (let i = 0; i < len; i++) {
+        dest[i] = chunk.charCodeAt(readHead + i);
+      }
+    } else {
+      throw new Error('invalid state');
     }
-    if (this.end !== b.end && !(this.eof && b.eof)) {
-      throw new Error('replace b does not match end');
-    }
-    if (a !== b && a.end !== b.start) {
-      throw new Error('replace a does not match b');
-    }
+    this.timestamp = Date.now();
+  }
 
-    const prev = this.prev;
-    const next = this.next;
-    this.prev = null;
-    this.next = null;
-    if (prev) {
-      prev.next = a;
-      a.prev = prev;
+  split(offset) {
+    if (!this.empty || !this.contains(offset)) {
+      throw new Error('invalid split');
     }
-    if (next) {
-      next.prev = b;
-      b.next = next;
-    }
-    if (a !== b) {
-      a.next = b;
-      b.prev = a;
-    }
+    const a = new CacheItem({
+      start: this.start,
+      end: offset
+    });
+    const b = new CacheItem({
+      start: offset,
+      end: this.eof ? offset : this.end,
+      eof: this.eof
+    });
+    a.next = b;
+    b.prev = a;
+    return [a, b];
   }
 
   /**
