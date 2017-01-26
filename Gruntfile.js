@@ -24,7 +24,7 @@ module.exports = function(grunt) {
           {
             expand: true,
             cwd: 'test/qunit/',
-            src: ['qunit.html', 'qunit-tests.js'],
+            src: ['qunit.html', 'qunit-tests.js', 'test-audio.opus'],
             dest: 'dist/'
           }
         ]

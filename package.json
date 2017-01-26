@@ -1,6 +1,6 @@
 {
   "name": "stream-file",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Buffered streaming HTTP fetch abstraction",
   "main": "lib/stream-file.js",
   "files": [

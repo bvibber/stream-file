@@ -83,11 +83,13 @@ class StreamFile {
         throw new Error('cannot load when loaded');
       }
       this.loading = true;
-      this._openBackend(cancelToken).then(() => {
-        // Save metadata from the first set
-        this.seekable = this._backend.seekable;
-        this.headers = this._backend.headers;
-        this.length = this._backend.length;
+      this._openBackend(cancelToken).then((backend) => {
+        // Save metadata from the first set...
+        // Beware this._backend may be null already,
+        // if the first segment was very short!
+        this.seekable = backend.seekable;
+        this.headers = backend.headers;
+        this.length = backend.length;
         this.loaded = true;
         this.loading = false;
         resolve();
@@ -121,7 +123,7 @@ class StreamFile {
         const writable = cache.bytesWritable(max);
         if (writable === 0) {
           // Nothing to read/write within the current readahead area.
-          resolve();
+          resolve(null);
         } else {
           const backend = this._backend = new Backend({
             url: this.url,

@@ -4,9 +4,12 @@ StreamFile
 Handy class / XHR wrapper for streaming large files from the web.
 Supports chunking and seeking within large files using the HTTP 'Range' header.
 
-Copyright 2013-2016 by Brion Vibber <brion@pobox.com>. Provided under MIT license.
+Copyright 2013-2017 by Brion Vibber <brion@pobox.com>. Provided under MIT license.
 
 https://github.com/brion/stream-file
+
+0.1.1 - 2017-01-26
+* fix for failure on very short files
 
 0.1.0 - 2016-10-02
 * initial npm release

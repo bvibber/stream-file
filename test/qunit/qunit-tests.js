@@ -61,3 +61,24 @@ QUnit.test("quickie test", function(assert) {
     done();
   });
 });
+
+QUnit.test("short file test", function(assert) {
+  var done = assert.async();
+
+  var url = 'https://upload.wikimedia.org/wikipedia/commons/d/d0/Ja-Godzilla.oga';
+  url = 'test-audio.opus';
+  var stream = new StreamFile({
+    url: url,
+    chunkSize: 1 * 1024 * 1024,
+    cacheSize: 32 * 1024 * 1024
+  });
+
+  stream.load().then(function() {
+    assert.ok(true, 'loaded');
+    done();
+  }).catch(function(err) {
+    console.log(err);
+    throw err;
+    done();
+  });
+});
