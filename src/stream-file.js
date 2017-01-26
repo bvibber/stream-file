@@ -102,6 +102,8 @@ class StreamFile {
 
   /**
    * Create a backend and wait for it to load.
+   * The returned 'backend' object may be null if there is no data to read.
+   *
    * @returns {Promise}
    */
   _openBackend(cancelToken) {
@@ -118,6 +120,12 @@ class StreamFile {
         const readable = cache.bytesReadable(max);
         const readTail = cache.readOffset + readable;
         cache.seekWrite(readTail);
+
+        // Did we already cache the entire file?
+        if (this.length >= 0 && readTail >= this.length) {
+          resolve(null);
+          return;
+        }
 
         // Do we have space to write within that chunk?
         const writable = cache.bytesWritable(max);
@@ -305,12 +313,20 @@ class StreamFile {
 
         // If we don't already have a backend open, start downloading.
         this._openBackend(cancelToken).then((backend) => {
-          return backend.bufferToOffset(end, cancelToken);
+          if (backend) {
+            return backend.bufferToOffset(end, cancelToken).then(() => {
+              // We might have to roll over to another download,
+              // so loop back around!
+              this.buffering = false;
+              return this.buffer(nbytes, cancelToken);
+            });
+          } else {
+            // No more data to read.
+            return Promise.resolve();
+          }
         }).then(() => {
-          // We might have to roll over to another download,
-          // so loop back around!
           this.buffering = false;
-          this.buffer(nbytes, cancelToken).then(resolve).catch(reject);
+          resolve();
         }).catch((err) => {
           this.buffering = false;
           reject(err);

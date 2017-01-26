@@ -8,6 +8,9 @@ Copyright 2013-2017 by Brion Vibber <brion@pobox.com>. Provided under MIT licens
 
 https://github.com/brion/stream-file
 
+0.1.2 - 2016-01-27
+* fix for end-of-file edge cases
+
 0.1.1 - 2017-01-26
 * fix for failure on very short files
 

@@ -65,8 +65,7 @@ QUnit.test("quickie test", function(assert) {
 QUnit.test("short file test", function(assert) {
   var done = assert.async();
 
-  var url = 'https://upload.wikimedia.org/wikipedia/commons/d/d0/Ja-Godzilla.oga';
-  url = 'test-audio.opus';
+  var url = 'test-audio.opus';
   var stream = new StreamFile({
     url: url,
     chunkSize: 1 * 1024 * 1024,
@@ -82,3 +81,76 @@ QUnit.test("short file test", function(assert) {
     done();
   });
 });
+
+QUnit.test("shortish file re-seek test", function(assert) {
+  var done = assert.async();
+
+  var url = 'https://upload.wikimedia.org/wikipedia/commons/d/d0/Ja-Godzilla.oga';
+  var stream = new StreamFile({
+    url: url,
+    chunkSize: 1 * 1024 * 1024,
+    cacheSize: 32 * 1024 * 1024
+  });
+
+  stream.load().then(function() {
+    assert.ok(true, 'loaded');
+    assert.ok(stream.length > 0, 'stream.length > 0');
+    assert.ok(stream.seekable, 'stream.seekable');
+
+    return stream.read(stream.length);
+  }).then(function(bytes) {
+    assert.ok(true, 'read through to end of file');
+
+    return stream.seek(0);
+  }).then(function() {
+    assert.ok(true, 'seeked to beginning');
+
+    return stream.read(stream.length);
+  }).then(function() {
+    assert.ok(true, 'read through to end again');
+
+  }).then(function() {
+    done();
+  }).catch(function(err) {
+    console.log(err);
+    throw err;
+    done();
+  });
+});
+
+QUnit.test("longer file re-seek test", function(assert) {
+  var done = assert.async();
+
+  var url = 'https://upload.wikimedia.org/wikipedia/commons/9/94/Folgers.ogv';
+  var stream = new StreamFile({
+    url: url,
+    chunkSize: 1 * 1024 * 1024,
+    cacheSize: 32 * 1024 * 1024
+  });
+
+  stream.load().then(function() {
+    assert.ok(true, 'loaded');
+    assert.ok(stream.length > 0, 'stream.length > 0');
+    assert.ok(stream.seekable, 'stream.seekable');
+
+    return stream.read(stream.length);
+  }).then(function(bytes) {
+    assert.ok(true, 'read through to end of file');
+
+    return stream.seek(0);
+  }).then(function() {
+    assert.ok(true, 'seeked to beginning');
+
+    return stream.read(stream.length);
+  }).then(function() {
+    assert.ok(true, 'read through to end again');
+
+  }).then(function() {
+    done();
+  }).catch(function(err) {
+    console.log(err);
+    throw err;
+    done();
+  });
+});
+
