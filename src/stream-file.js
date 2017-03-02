@@ -108,6 +108,9 @@ class StreamFile {
    */
   _openBackend(cancelToken) {
     return new Promise((resolve, reject) => {
+      if (cancelToken) {
+        cancelToken.cancel = (err) => {};
+      }
       if (this._backend) {
         resolve(this._backend);
       } else if (this.eof) {
@@ -305,20 +308,35 @@ class StreamFile {
       const end = this._clampToLength(this.offset + nbytes);
       const readable = end - this.offset;
 
+      let canceled = false;
+      if (cancelToken) {
+        cancelToken.cancel = (err) => {};
+      }
+
       if (this.bytesAvailable(readable) >= readable) {
         // Requested data is immediately available.
         resolve();
       } else {
         this.buffering = true;
 
+        let subCancelToken = {};
+        if (cancelToken) {
+          cancelToken.cancel = (err) => {
+            canceled = true;
+            subCancelToken.cancel(err);
+
+            this.buffering = false;
+            reject(err);
+          };
+        }
         // If we don't already have a backend open, start downloading.
-        this._openBackend(cancelToken).then((backend) => {
+        this._openBackend(subCancelToken).then((backend) => {
           if (backend) {
-            return backend.bufferToOffset(end, cancelToken).then(() => {
+            return backend.bufferToOffset(end, subCancelToken).then(() => {
               // We might have to roll over to another download,
               // so loop back around!
               this.buffering = false;
-              return this.buffer(nbytes, cancelToken);
+              return this.buffer(nbytes, subCancelToken);
             });
           } else {
             // No more data to read.
@@ -326,10 +344,15 @@ class StreamFile {
           }
         }).then(() => {
           this.buffering = false;
+          if (cancelToken) {
+            cancelToken.cancel = (err) => {};
+          }
           resolve();
         }).catch((err) => {
-          this.buffering = false;
-          reject(err);
+          if (!canceled) {
+            this.buffering = false;
+            reject(err);
+          }
         })
       }
     });
