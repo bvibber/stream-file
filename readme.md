@@ -8,6 +8,9 @@ Copyright 2013-2017 by Brion Vibber <brion@pobox.com>. Provided under MIT licens
 
 https://github.com/brion/stream-file
 
+0.1.5 - 2016-03-17
+* prefer binary string over MSStream on IE 11 for now (MSStream backend does not maintain readahead buffer across boundaries)
+
 0.1.4 - 2017-03-16
 * fixes for MSStream detection on IE
 

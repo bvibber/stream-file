@@ -7,10 +7,10 @@ const BinaryStringBackend = require('./binary-string-backend.js');
 function autoselect() {
   if (MozChunkedBackend.supported()) {
     return MozChunkedBackend;
-  } else if (MSStreamBackend.supported()) {
-    return MSStreamBackend;
   } else if (BinaryStringBackend.supported()) {
     return BinaryStringBackend;
+  } else if (MSStreamBackend.supported()) {
+    return MSStreamBackend;
   } else {
     return null;
   }
