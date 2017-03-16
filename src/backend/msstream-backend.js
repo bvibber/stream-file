@@ -118,6 +118,8 @@ class MSStreamBackend extends Backend {
 MSStreamBackend.supported = function() {
   try {
     const xhr = new XMLHttpRequest();
+    // IE demands that open() be called before we can set xhr.responseType
+    xhr.open("GET", "/robots.txt");
     xhr.responseType = type;
     return (xhr.responseType === type);
   } catch (e) {

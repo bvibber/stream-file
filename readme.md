@@ -8,6 +8,9 @@ Copyright 2013-2017 by Brion Vibber <brion@pobox.com>. Provided under MIT licens
 
 https://github.com/brion/stream-file
 
+0.1.4 - 2017-03-16
+* fixes for MSStream detection on IE
+
 0.1.3 - 2017-03-01
 * fixes for stream.buffering prop with cancelToken usage
 
