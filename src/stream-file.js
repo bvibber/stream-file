@@ -71,10 +71,9 @@ class StreamFile {
    * On success, loaded will become true, headers may be filled out,
    * and length may be available.
    *
-   * @param {CancelToken?} cancelToken - optional cancellation token
    * @returns {Promise}
    */
-  load(cancelToken) {
+  load() {
     return new Promise((resolve, reject) => {
       if (this.loading) {
         throw new Error('cannot load when loading');
@@ -83,7 +82,7 @@ class StreamFile {
         throw new Error('cannot load when loaded');
       }
       this.loading = true;
-      this._openBackend(cancelToken).then((backend) => {
+      this._openBackend().then((backend) => {
         // Save metadata from the first set...
         // Beware this._backend may be null already,
         // if the first segment was very short!
@@ -94,7 +93,9 @@ class StreamFile {
         this.loading = false;
         resolve();
       }).catch((err) => {
-        this.loading = false;
+        if (err.name !== 'AbortError') {
+          this.loading = false;
+        }
         reject(err);
       });
     });
@@ -106,11 +107,8 @@ class StreamFile {
    *
    * @returns {Promise}
    */
-  _openBackend(cancelToken) {
+  _openBackend() {
     return new Promise((resolve, reject) => {
-      if (cancelToken) {
-        cancelToken.cancel = (err) => {};
-      }
       if (this._backend) {
         resolve(this._backend);
       } else if (this.eof) {
@@ -144,13 +142,6 @@ class StreamFile {
           });
 
           let oncomplete = null;
-          if (cancelToken) {
-            cancelToken.cancel = (err) => {
-              this._backend = null;
-              backend.abort();
-              reject(err);
-            }
-          }
 
           const checkOpen = () => {
             if (backend !== this._backend) {
@@ -187,9 +178,6 @@ class StreamFile {
           oncomplete = () => {
             backend.off('open', checkOpen);
             backend.off('error', checkError);
-            if (cancelToken) {
-              cancelToken.cancel = () => {};
-            }
           };
           backend.on('open', checkOpen);
           backend.on('error', checkError);
@@ -208,13 +196,13 @@ class StreamFile {
    * a download backend in place, create one and start it loading in background.
    * @returns {Promise}
    */
-  _readAhead(cancelToken) {
+  _readAhead() {
     return new Promise((resolve, reject) => {
       if (this._backend || this.eof) {
         // do nothing
         resolve();
       } else {
-        this._openBackend(cancelToken).then(() => {
+        this._openBackend().then(() => {
           resolve();
         }).catch((err) => {
           reject(err)
@@ -228,10 +216,9 @@ class StreamFile {
    * After succesful completion, reads will continue at the new offset.
    * May fail due to network problems, invalid input, or bad state.
    * @param {number} offset - target byte offset from beginning of file
-   * @param {CancelToken?} cancelToken - optional cancellation token
    * @returns {Promise} - resolved when ready to read at the new position
    */
-  seek(offset, cancelToken) {
+  seek(offset) {
     return new Promise((resolve, reject) => {
       if (!this.loaded || this.buffering || this.seeking) {
         throw new Error('invalid state');
@@ -250,7 +237,7 @@ class StreamFile {
         this._cache.seekWrite(offset);
 
         // Fire off a download if necessary.
-        this._readAhead(cancelToken).then(resolve).catch(reject);
+        this._readAhead().then(resolve).catch(reject);
       }
     });
   }
@@ -263,9 +250,10 @@ class StreamFile {
    *
    * @param {number} nbytes - max number of bytes to read
    * @returns {ArrayBuffer} - between 0 and nbytes of data, inclusive
+   * @deprecated
    */
-  read(nbytes, cancelToken) {
-    return this.buffer(nbytes, cancelToken).then(() => {
+  read(nbytes) {
+    return this.buffer(nbytes).then(() => {
       return this.readSync(nbytes);
     });
   }
@@ -278,6 +266,7 @@ class StreamFile {
    *
    * @param {number} nbytes - max number of bytes to read
    * @returns {ArrayBuffer} - between 0 and nbytes of data, inclusive
+   * @deprecated
    */
   readSync(nbytes) {
     if (!this.loaded || this.buffering || this.seeking) {
@@ -296,9 +285,8 @@ class StreamFile {
   /**
    * Wait until the given number of bytes are available to read, or end of file.
    * @param {number} nbytes - max bytes to wait for
-   * @param {Object?} cancelToken - optional cancellation token
    */
-  buffer(nbytes, cancelToken) {
+  buffer(nbytes) {
     return new Promise((resolve, reject) => {
       if (!this.loaded || this.buffering || this.seeking) {
         throw new Error('invalid state');
@@ -309,9 +297,6 @@ class StreamFile {
       const readable = end - this.offset;
 
       let canceled = false;
-      if (cancelToken) {
-        cancelToken.cancel = (err) => {};
-      }
 
       if (this.bytesAvailable(readable) >= readable) {
         // Requested data is immediately available.
@@ -319,24 +304,14 @@ class StreamFile {
       } else {
         this.buffering = true;
 
-        let subCancelToken = {};
-        if (cancelToken) {
-          cancelToken.cancel = (err) => {
-            canceled = true;
-            subCancelToken.cancel(err);
-
-            this.buffering = false;
-            reject(err);
-          };
-        }
         // If we don't already have a backend open, start downloading.
-        this._openBackend(subCancelToken).then((backend) => {
+        this._openBackend().then((backend) => {
           if (backend) {
-            return backend.bufferToOffset(end, subCancelToken).then(() => {
+            return backend.bufferToOffset(end).then(() => {
               // We might have to roll over to another download,
               // so loop back around!
               this.buffering = false;
-              return this.buffer(nbytes, subCancelToken);
+              return this.buffer(nbytes);
             });
           } else {
             // No more data to read.
@@ -344,15 +319,13 @@ class StreamFile {
           }
         }).then(() => {
           this.buffering = false;
-          if (cancelToken) {
-            cancelToken.cancel = (err) => {};
-          }
           resolve();
         }).catch((err) => {
-          if (!canceled) {
+          if (err.name !== 'AbortError') {
+            // was already set synchronously; avoid stomping on old promise
             this.buffering = false;
-            reject(err);
           }
+          reject(err);
         })
       }
     });
@@ -368,9 +341,21 @@ class StreamFile {
   }
 
   /**
-   * Abort any currently running downloads.
+   * Abort any currently running downloads and operations.
    */
   abort() {
+    // Clear state synchronously, so can immediately launch new i/o...
+    if (this.loading) {
+      this.loading = false;
+    }
+    if (this.buffering) {
+      this.buffering = false;
+    }
+    if (this.seeking) {
+      this.seeking = false;
+    }
+
+    // Abort any active backend request...
     if (this._backend) {
       this._backend.abort();
       this._backend = null;

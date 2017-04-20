@@ -108,9 +108,13 @@ class Backend extends TinyEvents {
     this.xhr = new XMLHttpRequest();
   }
 
-  load(cancelToken) {
+  load() {
     return new Promise((resolve, reject) => {
       let oncomplete = null;
+      this._onAbort = (err) => {
+        oncomplete();
+        reject(err);
+      };
       const checkOpen = () => {
         // There doesn't seem to be a good match for readyState 2 on the XHR2 events model.
         if (this.xhr.readyState == 2) {
@@ -135,7 +139,7 @@ class Backend extends TinyEvents {
               this.emit('cachever');
               this.abort();
               oncomplete();
-              this.load(cancelToken).then(resolve).catch(reject);
+              this.load().then(resolve).catch(reject);
               return;
             }
             this.seekable = true;
@@ -158,20 +162,11 @@ class Backend extends TinyEvents {
         oncomplete();
         resolve();
       };
-      if (cancelToken) {
-        cancelToken.cancel = (reason) => {
-          this.abort();
-          oncomplete();
-          reject(reason);
-        }
-      }
       oncomplete = () => {
         this.xhr.removeEventListener('readystatechange', checkOpen);
         this.xhr.removeEventListener('error', checkError);
         this.off('open', checkBackendOpen);
-        if (cancelToken) {
-          cancelToken.cancel = () => {};
-        }
+        this._onAbort = null;
       };
 
       this.initXHR();
@@ -192,12 +187,22 @@ class Backend extends TinyEvents {
    * Note that MSStream backend will need this to be called explicitly,
    * while the other backends download progressively even without a call.
    */
-  bufferToOffset(end, cancelToken) {
+  bufferToOffset(end) {
     return Promise.reject(new Error('abstract'));
   }
 
   abort() {
     this.xhr.abort();
+
+    if (this._onAbort) {
+      const onAbort = this._onAbort;
+      this._onAbort = null;
+
+      let err = new Error('Aborted');
+      err.name = 'AbortError';
+
+      onAbort(err);
+    }
   }
 
   // ---------------

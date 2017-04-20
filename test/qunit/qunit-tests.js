@@ -168,10 +168,9 @@ QUnit.test("cancel aborts buffering", function(assert) {
     assert.ok(stream.length > 0, 'stream.length > 0');
     assert.ok(stream.seekable, 'stream.seekable');
 
-    var cancelToken = {};
-    stream.read(stream.length, cancelToken);
+    stream.read(stream.length);
     assert.ok(stream.buffering, 'stream.buffering true after read start')
-    cancelToken.cancel(new Error('abort'));
+    stream.abort();
     assert.ok(!stream.buffering, 'stream.buffering false after read cancel');
 
   }).then(function() {

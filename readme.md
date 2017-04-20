@@ -8,7 +8,10 @@ Copyright 2013-2017 by Brion Vibber <brion@pobox.com>. Provided under MIT licens
 
 https://github.com/brion/stream-file
 
-0.1.5 - 2016-03-17
+0.2.0 - 2017-04-??
+* drop `cancelToken` scheme in favor of `abort()` method. This is a breaking API change.
+
+0.1.5 - 2017-03-17
 * prefer binary string over MSStream on IE 11 for now (MSStream backend does not maintain readahead buffer across boundaries)
 
 0.1.4 - 2017-03-16
@@ -74,25 +77,30 @@ stream.load().then(function() {
 });
 ```
 
-## Cancelation
+## Cancellation
 
-Methods that return Promises accept a "cancelation token" argument, an object which can be used to cancel an in-progress event. Since cancelable Promises are not yet standardized, this is done in an ad-hoc fashion: caller passes in an object, and the async function adds a 'cancel' method to it that can be called to abort the operation.
+The `load()`, `buffer()`, `read()`, and `seek()` calls may be canceled by calling `abort()`. Further reads or seeks may then be triggered at will.
+
+Note that earlier versions used a per-call "cancellation token" argument, which has been dropped as of 0.2.0 since cancelable Promises have not been standardized and the use cases are actually simple enough not to need it.
 
 This can be used to implement a timeout, or otherwise cancel something:
 
 ```
-var cancelToken = {};
 var timeout = setTimeout(function() {
   // Cancel read if didn't succeed within 5 seconds
-  cancelToken.cancel(new Error('timeout'));
+  stream.abort();
 }, 5000)
-stream.read(65536, cancelToken).then(function(buffer) {
+stream.read(65536).then(function(buffer) {
   // Success!
   clearTimeout(timeout);
   doSomething(buffer);
 }).catch(function(err) {
   // Cancelation will trigger the error path.
-  console.log(err);
+  if (err.name === 'AbortError') {
+    console.log('Cancel or timeout!');
+  } else {
+    console.log(err);
+  }
 });
 ```
 
@@ -142,7 +150,7 @@ Pass the constructor an object with various properties:
 
 ## Methods
 
-**load**(cancelToken: Object?): Promise
+**load**(): Promise
 * start loading the URL and buffering data
 * on completion, loaded will be true
 * while running, loading will be true
@@ -152,16 +160,16 @@ Pass the constructor an object with various properties:
 * may be 0!
 * pass optional 'max' parameter to reduce search time within cache if you only care about hitting a certain number
 
-**seek**(offset, cancelToken: Object?): Promise
+**seek**(offset): Promise
 * seek to the target offset from the beginning of the file
 * invalid if stream not seekable
 * invalid if currently loading, seeking, or buffering
 * may change offset, eof state
 
-**buffer**(nbytes:number, cancelToken: Object?): Promise
+**buffer**(nbytes:number): Promise
 * wait until at least nbytes are available in the buffer or eof
 
-**read**(nbytes, cancelToken: Object?): Promise<ArrayBuffer>
+**read**(nbytes): Promise<ArrayBuffer>
 * wait until nbytes are available or eof, read the data, then return a buffer via Promise
 * if eof is reached, will return fewer -- even 0
 
@@ -169,6 +177,9 @@ Pass the constructor an object with various properties:
 * read up to nbytes from buffer and return immediately
 * if less than nbytes are available due to eof or limited buffer, will return fewer -- even 0
 * may change offset, eof state
+
+**abort**()
+* cancel any active network operations but keep state live
 
 **close**()
 * close resources and cancel all operations

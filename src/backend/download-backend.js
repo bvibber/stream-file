@@ -8,19 +8,16 @@ const Backend = require('./backend.js');
  */
 class DownloadBackend extends Backend {
 
-  bufferToOffset(end, cancelToken) {
+  bufferToOffset(end) {
     return new Promise((resolve, reject) => {
       if (this.eof || this.offset >= end) {
         resolve();
       } else {
         let oncomplete = null;
-        if (cancelToken) {
-          cancelToken.cancel = (reason) => {
-            this.abort();
-            oncomplete();
-            reject(reason);
-          };
-        }
+        this._onAbort = (err) => {
+          oncomplete();
+          reject(reason);
+        };
 
         const checkBuffer = () => {
           if (this.offset >= end && !this.eof) {
@@ -42,6 +39,7 @@ class DownloadBackend extends Backend {
           this.off('buffer', checkBuffer);
           this.off('done', checkDone);
           this.off('error', checkError);
+          this._onAbort = null;
         };
 
         this.buffering = true;

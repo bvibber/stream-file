@@ -29,24 +29,22 @@ class MSStreamBackend extends Backend {
     this.xhr.addEventListener('readystatechange', checkProgress);
   }
 
-  waitForStream(cancelToken) {
+  waitForStream() {
     return new Promise((resolve, reject) => {
       if (this.stream) {
         resolve(this.stream);
       } else {
         let oncomplete = null;
-        if (cancelToken) {
-          cancelToken.cancel = (err) => {
-            oncomplete();
-            reject(err);
-          };
-        }
+        this._onAbort = (err) => {
+          oncomplete();
+          reject(err);
+        };
         const checkStart = () => {
           resolve(this.stream);
         };
         oncomplete = () => {
-          cancelToken.cancel = () => {};
           this.off('open', checkStart);
+          this._onAbort = null;
         }
         this.on('open', checkStart);
       }
@@ -57,8 +55,8 @@ class MSStreamBackend extends Backend {
    * Trigger further download of bytes
    * @returns {Promise}
    */
-  bufferToOffset(end, cancelToken) {
-    return this.waitForStream(cancelToken).then((stream) => {
+  bufferToOffset(end) {
+    return this.waitForStream().then((stream) => {
       return new Promise((resolve, reject) => {
         if (this.streamReader) {
           throw new Error('cannot trigger read when reading');
@@ -87,15 +85,13 @@ class MSStreamBackend extends Backend {
             this.emit('error');
             reject(new Error('mystery error streaming'));
           };
-          if (cancelToken) {
-            cancelToken.cancel = (reason) => {
-              this.streamReader.abort();
-              this.streamReader = null;
-              this.stream = null;
-              this.emit('error');
-              reject(reason);
-            };
-          }
+          this._onAbort = (err) => {
+            this.streamReader.abort();
+            this.streamReader = null;
+            this.stream = null;
+            this.emit('error');
+            reject(reason);
+          };
           this.streamReader.readAsArrayBuffer(stream, nbytes);
         }
       });
