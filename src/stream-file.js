@@ -250,12 +250,9 @@ class StreamFile {
    *
    * @param {number} nbytes - max number of bytes to read
    * @returns {ArrayBuffer} - between 0 and nbytes of data, inclusive
-   * @deprecated
    */
   read(nbytes) {
-    return this.buffer(nbytes).then(() => {
-      return this.readSync(nbytes);
-    });
+    return this.buffer(nbytes).then((available) => this.readSync(available));
   }
 
   /**
@@ -266,25 +263,44 @@ class StreamFile {
    *
    * @param {number} nbytes - max number of bytes to read
    * @returns {ArrayBuffer} - between 0 and nbytes of data, inclusive
-   * @deprecated
    */
   readSync(nbytes) {
+    const available = this.bytesAvailable(nbytes);
+    const dest = new Uint8Array(available);
+    const actual = this.readBytes(dest);
+    if (actual !== available) {
+      throw new Error('failed to read expected data');
+    }
+    return dest.buffer;
+  }
+
+  /**
+   * Read bytes into destination array until out of buffer or space,
+   * and advance the read head.
+   *
+   * Returns immediately.
+   *
+   * @param {dest} Uint8Array - destination byte array
+   * @returns {number} - count of actual bytes read
+   */
+  readBytes(dest) {
     if (!this.loaded || this.buffering || this.seeking) {
       throw new Error('invalid state');
-    } else if (nbytes !== (nbytes | 0) || nbytes < 0) {
+    } else if (!(dest instanceof Uint8Array)) {
       throw new Error('invalid input');
     }
-    const buffer = this._cache.read(nbytes);
+    const nbytes = this._cache.readBytes(dest);
 
     // Trigger readahead if necessary.
     this._readAhead();
 
-    return buffer;
+    return nbytes;
   }
 
   /**
    * Wait until the given number of bytes are available to read, or end of file.
    * @param {number} nbytes - max bytes to wait for
+   * @returns {Promise} - resolved with available byte count when ready
    */
   buffer(nbytes) {
     return new Promise((resolve, reject) => {
@@ -298,9 +314,10 @@ class StreamFile {
 
       let canceled = false;
 
-      if (this.bytesAvailable(readable) >= readable) {
+      let available = this.bytesAvailable(readable);
+      if (available >= readable) {
         // Requested data is immediately available.
-        resolve();
+        resolve(available);
       } else {
         this.buffering = true;
 
@@ -315,11 +332,11 @@ class StreamFile {
             });
           } else {
             // No more data to read.
-            return Promise.resolve();
+            return Promise.resolve(available);
           }
-        }).then(() => {
+        }).then((available) => {
           this.buffering = false;
-          resolve();
+          resolve(available);
         }).catch((err) => {
           if (err.name !== 'AbortError') {
             // was already set synchronously; avoid stomping on old promise

@@ -106,12 +106,12 @@ class CachePool {
    *
    * Returns immediately.
    *
-   * @param {number} nbytes - max number of bytes to read
-   * @returns {ArrayBuffer} - between 0 and nbytes of data, inclusive
+   * @param {Uint8Array} dest - destination array to read to
+   * @returns {number} - count of bytes actually read
    */
-  read(nbytes) {
+  readBytes(dest) {
+    const nbytes = dest.byteLength;
     const len = this.bytesReadable(nbytes);
-    const dest = new Uint8Array(len);
     const start = this.readOffset;
     const end = start + len;
 
@@ -132,7 +132,7 @@ class CachePool {
     this.readOffset = readHead;
     this.readCursor = this.readCursor.first((item) => item.contains(readHead));
 
-    return dest.buffer;
+    return len;
   }
 
   /**

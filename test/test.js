@@ -256,11 +256,12 @@ describe('CachePool', function() {
     it('should read sensibly on one item', function() {
       const pool = new CachePool();
       pool.write(byteBuffer(16));
-      let data = new Uint8Array(pool.read(16));
+      let data = new Uint8Array(16);
+      let nbytes = pool.readBytes(data);
 
       checkInvariants(pool);
 
-      assert.equal(data.length, 16, 'read expected length');
+      assert.equal(nbytes, 16, 'read expected length');
       assert.deepEqual(data, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], 'read expected data');
     });
 
@@ -272,8 +273,9 @@ describe('CachePool', function() {
 
       checkInvariants(pool);
 
-      let data = new Uint8Array(pool.read(18));
-      assert.equal(data.length, 18, 'read expected length');
+      let data = new Uint8Array(18);
+      let nbytes = pool.readBytes(data)
+      assert.equal(nbytes, 18, 'read expected length');
       assert.deepEqual(data, [
           0, 1, 2, 3, 4, 5, 6,
           0, 1, 2, 3, 4,
@@ -319,7 +321,8 @@ describe('CachePool', function() {
       checkInvariants(pool);
 
       pool.seekRead(4);
-      let data = new Uint8Array(pool.read(14));
+      let data = new Uint8Array(14);
+      let nbytes = pool.readBytes(data);
       assert.equal(data.length, 14, 'read expected length');
       assert.deepEqual(data, [
           4, 5, 6,
@@ -342,17 +345,19 @@ describe('CachePool', function() {
       checkInvariants(pool);
 
       pool.seekRead(4);
-      let data = new Uint8Array(pool.read(14));
-      assert.equal(data.length, 0, 'nothing to read at index 4');
+      let data = new Uint8Array(14);
+      let nbytes = pool.readBytes(data);
+      assert.equal(nbytes, 0, 'nothing to read at index 4');
 
       checkInvariants(pool);
 
       pool.seekRead(36);
-      data = new Uint8Array(pool.read(14));
+      data = new Uint8Array(14);
+      nbytes = pool.readBytes(data);
 
       checkInvariants(pool);
 
-      assert.equal(data.length, 14, 'read expected length');
+      assert.equal(nbytes, 14, 'read expected length');
       assert.deepEqual(data, [
           4, 5, 6,
           0, 1, 2, 3, 4,

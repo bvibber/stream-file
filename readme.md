@@ -8,8 +8,10 @@ Copyright 2013-2017 by Brion Vibber <brion@pobox.com>. Provided under MIT licens
 
 https://github.com/brion/stream-file
 
-0.2.0 - 2017-04-??
-* drop `cancelToken` scheme in favor of `abort()` method. This is a breaking API change.
+0.2.0 - 2017-04-23
+* Added `readBytes()` method allowing copying directly into a byte array such as an emscripten heap subarray.
+* Breaking API changes:
+    * Drop `cancelToken` scheme in favor of `abort()` method.
 
 0.1.5 - 2017-03-17
 * prefer binary string over MSStream on IE 11 for now (MSStream backend does not maintain readahead buffer across boundaries)
@@ -42,12 +44,16 @@ stream-file depends on the ES6 Promise class; you can use a polyfill such as [es
 
 ## Example
 
-```
+```js
 var StreamFile = require('stream-file');
 
 var stream = new StreamFile({
   url: 'https://upload.wikimedia.org/wikipedia/commons/9/94/Folgers.ogv',
+
+  // Optional; max size of each download chunk
   chunkSize: 1 * 1024 * 1024,
+
+  // Optional; total amount of in-memory cache
   cacheSize: 32 * 1024 * 1024
 });
 
@@ -77,6 +83,92 @@ stream.load().then(function() {
 });
 ```
 
+## Reading into ArrayBuffers asynchronously
+
+
+ES5 syntax with Promises:
+```js
+function readAsArrayBufferAsync(stream) {
+  // Wait for eof or available byte range
+  return stream.read(1024).then(function(buffer) {
+    // ... do something with buffer ...
+    console.log('read ' + buffer.byteLength + ' bytes');
+  })
+}
+```
+
+ES7 async syntax:
+```js
+async function readAsArrayBufferAsync(stream) {
+  // Wait for eof or available byte range
+  let buffer = await stream.read(1024);
+  // ... do something with buffer ...
+  console.log('read ' + buffer.byteLength + ' bytes');
+}
+```
+
+## Buffering ahead
+
+ES5 syntax with Promises:
+```js
+function doBufferAsync(stream) {
+  // Wait for eof or available byte range
+  return stream.buffer(1024).then(function( available) {
+    // ... do some sync stuff
+  });
+}
+```
+
+ES7 async syntax:
+```js
+async function doBufferAsync(stream) {
+  // Wait for eof or available byte range
+  let available = await stream.buffer(1024);
+
+  // ... do some sync stuff
+}
+```
+
+## Reading synchronously
+
+If you already have enough data buffered, you can work synchronously with that data by reading chunks of data with `readSync()`:
+
+```js
+function readAsArrayBufferSync(stream) {
+  // Wait for eof or available byte range
+  var available = stream.buffer(1024);
+
+  // May return 1024 bytes
+  var buffer = stream.readSync(available);
+  // ... do something with buffer ...
+  console.log('read ' + buffer.byteLength + ' bytes');
+}
+```
+
+If you're going to copy the result directly into a larger byte array such as an emscripten heap or WebAssembly memory, you can avoid an intermediate copy with `readBytes()` by reading from the StreamFile's buffers directly into the target array.
+
+ES5 syntax with Promises:
+
+```js
+function readIntoByteArray(stream) {
+  // Allocate a sub-buffer
+  var buflen = 1024;
+  var bufptr = Module._malloc(buflen);
+  var data = Module.HEAPU8.subarray(ptr, ptr + buflen);
+
+  // Copy the bytes directly into the aliased subarray...
+  var nbytes = stream.readBytes(data);
+  console.log('read ' + nbytes + ' bytes');
+
+  // Have the asm.js or wasm module process...
+  Module._process_my_data(bufptr, nbytes);
+
+  // Free the sub-buffer
+  Module._free(bufptr);
+}
+```
+
+
 ## Cancellation
 
 The `load()`, `buffer()`, `read()`, and `seek()` calls may be canceled by calling `abort()`. Further reads or seeks may then be triggered at will.
@@ -85,42 +177,68 @@ Note that earlier versions used a per-call "cancellation token" argument, which 
 
 This can be used to implement a timeout, or otherwise cancel something:
 
-```
-var timeout = setTimeout(function() {
-  // Cancel read if didn't succeed within 5 seconds
-  stream.abort();
-}, 5000)
-stream.read(65536).then(function(buffer) {
-  // Success!
-  clearTimeout(timeout);
-  doSomething(buffer);
-}).catch(function(err) {
-  // Cancelation will trigger the error path.
-  if (err.name === 'AbortError') {
-    console.log('Cancel or timeout!');
-  } else {
-    console.log(err);
-  }
-});
+ES5 with Promises:
+```js
+function readWithTimeout(stream) {
+  var timeout = setTimeout(function() {
+    // Cancel read if didn't succeed within 5 seconds
+    stream.abort();
+  }, 5000);
+
+  return stream.read(65536).then(function(buffer) {
+    // Success!
+    clearTimeout(timeout);
+    doSomething(buffer);
+  }).catch(function(err) {
+    // Cancelation will trigger the error path.
+    if (err.name === 'AbortError') {
+      console.log('Timeout!');
+    } else {
+      console.log(err);
+    }
+  });
+}
 ```
 
+ES7 async syntax:
+```js
+async function readWithTimeout(stream) {
+  let timeout = setTimeout(() => {
+    // Cancel read if didn't succeed within 5 seconds
+    stream.abort();
+  }, 5000);
+
+  try {
+    let buffer = await stream.read(65536);
+    // Success!
+    clearTimeout(timeout);
+    doSomething(buffer);
+  } catch(err) {
+    // Cancelation will trigger the error path.
+    if (err.name === 'AbortError') {
+      console.log('Timeout!');
+    } else {
+      console.log(err);
+    }
+  }
+}
+```
 # API
 
 ## Constructor options
 
 Pass the constructor an object with various properties:
 
-**url**: String
+**url**: string (required)
 * the URL to load
 
-**chunkSize**: number?
+**chunkSize**: number
 * optional size to chunk loads in, in bytes
 * defaults to 1MB
 
-**cacheSize** number?
+**cacheSize**: number
 * optional max size for in-memory buffer
 * defaults to 32MB
-* @TODO not yet implemented
 
 ## Properties
 
@@ -152,10 +270,10 @@ Pass the constructor an object with various properties:
 
 **load**(): Promise
 * start loading the URL and buffering data
-* on completion, loaded will be true
-* while running, loading will be true
+* while running, `loading` will be true
+* on completion, `loaded` will be true
 
-**bytesAvailable**(max:number?): number
+**bytesAvailable**(max:number=Infinity): number
 * count of available buffered bytes that can be read synchronously from the current position
 * may be 0!
 * pass optional 'max' parameter to reduce search time within cache if you only care about hitting a certain number
@@ -164,10 +282,11 @@ Pass the constructor an object with various properties:
 * seek to the target offset from the beginning of the file
 * invalid if stream not seekable
 * invalid if currently loading, seeking, or buffering
-* may change offset, eof state
+* may change `offset`, `eof` state
 
 **buffer**(nbytes:number): Promise
 * wait until at least nbytes are available in the buffer or eof
+* while running, `buffering` will be true
 
 **read**(nbytes): Promise<ArrayBuffer>
 * wait until nbytes are available or eof, read the data, then return a buffer via Promise
@@ -175,6 +294,17 @@ Pass the constructor an object with various properties:
 
 **readSync**(nbytes): ArrayBuffer
 * read up to nbytes from buffer and return immediately
+* if less than nbytes are available due to eof or limited buffer, will return fewer -- even 0
+* may change offset, eof state
+
+**readBytes**(dest:Uint8Array): Promise&lt;number>
+* wait until up to dest.byteLength bytes are available or eof, read the data, and return the number of bytes actually read via Promise
+* if less than nbytes are available due to eof or limited buffer, will return fewer -- even 0
+* may change offset, eof state
+
+**readBytesSync**(dest:Uint8Array): number
+* read up to dest.byteLength bytes into a bytes array and return immediately
+* returns the number of bytes actually read
 * if less than nbytes are available due to eof or limited buffer, will return fewer -- even 0
 * may change offset, eof state
 
@@ -219,7 +349,7 @@ Currently the ms-stream backend may be slightly buggier than the others.
 
 # License
 
-Copyright (c) 2013-2016 Brion Vibber and other contributors
+Copyright (c) 2013-2017 Brion Vibber and other contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
