@@ -44,6 +44,8 @@ stream-file depends on the ES6 Promise class; you can use a polyfill such as [es
 
 ## Example
 
+Module setup and constructor:
+
 ```js
 var StreamFile = require('stream-file');
 
@@ -56,35 +58,70 @@ var stream = new StreamFile({
   // Optional; total amount of in-memory cache
   cacheSize: 32 * 1024 * 1024
 });
-
-// load() opens up an HTTP request and gets some state info.
-stream.load().then(function() {
-  console.log(stream.seekable ? 'stream is seekable' : 'stream is not seekable');
-  console.log('stream length',  stream.length);
-  console.log('stream headers', stream.headers);
-
-  // seek() moves the input point to a new position, if stream is seekable
-  return stream.seek(1024);
-}).then(function() {
-
-  // read() waits until given byte count is available (or eof) and returns buffer
-  return stream.read(65536);
-}).then(function(buffer) {
-  console.log('read buffer with ' + buffer.byteLength + ' bytes');
-  console.log(stream.eof ? 'at eof' : 'not at eof');
-  console.log(stream.buffered); // buffered ranges
-
-  // All done!
-  stream.close();
-
-}).catch(function(err) {
-  // Any error conditions chain through the Promises to the final catch().
-  console.log('failed', err)
-});
 ```
 
-## Reading into ArrayBuffers asynchronously
+ES5 with Promises:
+```js
+function demo(stream) {
+  // load() opens up an HTTP request and gets some state info.
+  return stream.load().then(function() {
+    console.log(stream.seekable ? 'stream is seekable' : 'stream is not seekable');
+    console.log('stream length',  stream.length);
+    console.log('stream headers', stream.headers);
 
+    // seek() moves the input point to a new position, if stream is seekable
+    return stream.seek(1024);
+  }).then(function() {
+
+    // read() waits until given byte count is available (or eof) and returns buffer
+    return stream.read(65536);
+  }).then(function(buffer) {
+    console.log('read buffer with ' + buffer.byteLength + ' bytes');
+    console.log(stream.eof ? 'at eof' : 'not at eof');
+    console.log(stream.buffered); // buffered ranges
+
+    // All done!
+    stream.close();
+
+  }).catch(function(err) {
+    // Any error conditions chain through the Promises to the final catch().
+    console.log('failed', err)
+  });
+}
+```
+
+ES7 async syntax:
+```js
+async function demo(stream) {
+  try {
+    // load() opens up an HTTP request and gets some state info.
+    await stream.load();
+    console.log(stream.seekable ? 'stream is seekable' : 'stream is not seekable');
+    console.log('stream length',  stream.length);
+    console.log('stream headers', stream.headers);
+
+    // seek() moves the input point to a new position, if stream is seekable
+    await stream.seek(1024);
+
+    // read() waits until given byte count is available (or eof) and returns buffer
+    let buffer = await stream.read(65536);
+    console.log('read buffer with ' + buffer.byteLength + ' bytes');
+    console.log(stream.eof ? 'at eof' : 'not at eof');
+    console.log(stream.buffered); // buffered ranges
+
+    // All done!
+    stream.close();
+
+  } catch (err) {
+    // Any error conditions chain through the Promises to the final catch().
+    console.log('failed', err)
+  }
+}
+```
+
+## Reading asynchronously
+
+The `read()` method waits for the requested amount of data to be available, or end-of-file to be reached, and passes back an ArrayBuffer.
 
 ES5 syntax with Promises:
 ```js
@@ -102,6 +139,7 @@ ES7 async syntax:
 async function readAsArrayBufferAsync(stream) {
   // Wait for eof or available byte range
   let buffer = await stream.read(1024);
+
   // ... do something with buffer ...
   console.log('read ' + buffer.byteLength + ' bytes');
 }
@@ -109,12 +147,15 @@ async function readAsArrayBufferAsync(stream) {
 
 ## Buffering ahead
 
+To ensure data is buffered and available without reading it yet, call `buffer()`:
+
 ES5 syntax with Promises:
 ```js
 function doBufferAsync(stream) {
   // Wait for eof or available byte range
-  return stream.buffer(1024).then(function( available) {
+  return stream.buffer(1024).then(function(nbytes) {
     // ... do some sync stuff
+    console.log(nbytes + ' bytes ready to read');
   });
 }
 ```
@@ -123,9 +164,10 @@ ES7 async syntax:
 ```js
 async function doBufferAsync(stream) {
   // Wait for eof or available byte range
-  let available = await stream.buffer(1024);
+  let nbytes = await stream.buffer(1024);
 
   // ... do some sync stuff
+  console.log(nbytes + ' bytes ready to read');
 }
 ```
 
