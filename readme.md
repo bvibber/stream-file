@@ -8,6 +8,9 @@ Copyright 2013-2017 by Brion Vibber <brion@pobox.com>. Provided under MIT licens
 
 https://github.com/brion/stream-file
 
+0.2.1 - 2017-11-09
+* Fixed incorrect variable name in abort handling.
+
 0.2.0 - 2017-04-23
 * Added `readBytes()` method allowing copying directly into a byte array such as an emscripten heap subarray.
 * Breaking API changes:

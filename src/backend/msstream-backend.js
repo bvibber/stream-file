@@ -90,7 +90,7 @@ class MSStreamBackend extends Backend {
             this.streamReader = null;
             this.stream = null;
             this.emit('error');
-            reject(reason);
+            reject(err);
           };
           this.streamReader.readAsArrayBuffer(stream, nbytes);
         }

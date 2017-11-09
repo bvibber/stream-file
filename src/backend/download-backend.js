@@ -16,7 +16,7 @@ class DownloadBackend extends Backend {
         let oncomplete = null;
         this._onAbort = (err) => {
           oncomplete();
-          reject(reason);
+          reject(err);
         };
 
         const checkBuffer = () => {
