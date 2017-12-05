@@ -67,7 +67,7 @@ function getXHRRangeTotal(xhr) {
  */
 function getXHRHeaders(xhr) {
   const headers = {};
-  const headerLines = xhr.getAllResponseHeaders().split(/\n/);
+  const headerLines = xhr.getAllResponseHeaders().split(/\r?\n/);
   headerLines.forEach(function(line) {
     const bits = line.split(/:\s*/, 2);
     if (bits.length > 1) {

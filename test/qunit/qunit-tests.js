@@ -22,7 +22,7 @@ QUnit.test("quickie test", function(assert) {
     assert.ok(stream.loaded, 'loaded after load');
     assert.ok(stream.seekable, 'stream should be seekable');
     assert.equal(stream.length, 4775695, 'Folgers.ogv should be 4775695 bytes');
-    //assert.equal(stream.headers['content-type'], 'application/ogg', 'headers should come back');
+    assert.equal(stream.headers['content-type'], 'application/ogg', 'headers should come back');
     assert.ok(stream.headers['content-type'].match(/^.*\/.*/), 'headers should come back');
     console.log(stream.headers);
     return stream.seek(1024);
