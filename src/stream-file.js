@@ -129,7 +129,10 @@ class StreamFile {
         }
 
         // Do we have space to write within that chunk?
-        const writable = cache.bytesWritable(max);
+        // Don't go beyond the end of the file, or it will confuse
+        // some browsers (Safari with blob URLs).
+        const writable = this._clampToLength(cache.writeOffset + cache.bytesWritable(max)) - cache.writeOffset;
+
         if (writable === 0) {
           // Nothing to read/write within the current readahead area.
           resolve(null);

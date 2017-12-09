@@ -4,11 +4,11 @@ QUnit.test( "hello test", function( assert ) {
   assert.ok( 1 == "1", "Passed!" );
 });
 
-QUnit.test("quickie test", function(assert) {
+function doQuickieTest(assert, url) {
   const done = assert.async();
 
   var stream = new StreamFile({
-    url: 'https://upload.wikimedia.org/wikipedia/commons/9/94/Folgers.ogv',
+    url: url,
     chunkSize: 1 * 1024 * 1024,
     cacheSize: 32 * 1024 * 1024
   });
@@ -60,6 +60,10 @@ QUnit.test("quickie test", function(assert) {
     throw err;
     done();
   });
+}
+
+QUnit.test("quickie test", function(assert) {
+  doQuickieTest(assert, 'https://upload.wikimedia.org/wikipedia/commons/9/94/Folgers.ogv');
 });
 
 QUnit.test("short file test", function(assert) {
@@ -180,4 +184,89 @@ QUnit.test("cancel aborts buffering", function(assert) {
     throw err;
     done();
   });
+});
+
+QUnit.test("load stuff from a blob", function(assert) {
+  var url = 'https://upload.wikimedia.org/wikipedia/commons/9/94/Folgers.ogv';
+  var x = new XMLHttpRequest();
+  x.responseType = 'arraybuffer';
+  x.onload = function() {
+    var buf = x.response;
+    var blob = new Blob([buf], {
+      type: 'video/ogg'
+    });
+    var blobUrl = URL.createObjectURL(blob);
+
+    doQuickieTest(assert, blobUrl);
+  };
+  x.open('GET', url);
+  x.send();
+});
+
+function doOverflowTest(assert, url, readpast) {
+  var done = assert.async();
+  var stream = new StreamFile({
+    url: url
+  });
+  stream.load().then(() => {
+    return stream.buffer(readpast);
+  }).then((avail) => {
+    return stream.seek(readpast);
+  }).then((pos) => {
+    return stream.buffer(1024 * 1024);
+  }).then((avail) => {
+    assert.ok('survived reading beyond end of blob');
+    done();
+  }).catch((err) => {
+    throw err;
+    done();
+  });
+}
+
+QUnit.test("https check for over-end", function(assert) {
+  var url = 'https://upload.wikimedia.org/wikipedia/commons/9/94/Folgers.ogv';
+  doOverflowTest(assert, url, 1024 * 1024 * 4);
+});
+
+QUnit.test("blob check for over-end", function(assert) {
+  var done = assert.async();
+  var url = 'https://upload.wikimedia.org/wikipedia/commons/9/94/Folgers.ogv';
+  var x = new XMLHttpRequest();
+  x.responseType = 'arraybuffer';
+  x.onload = function() {
+    done();
+    var buf = x.response;
+    var blob = new Blob([buf], {
+      type: 'video/ogg'
+    });
+    var blobUrl = URL.createObjectURL(blob);
+
+    doOverflowTest(assert, blobUrl, 1024 * 1024 * 4);
+  };
+  x.open('GET', url);
+  x.send();
+});
+
+QUnit.test("https check for short over-end", function(assert) {
+  var url = 'https://upload.wikimedia.org/wikipedia/commons/d/d0/Ja-Godzilla.oga';
+  doOverflowTest(assert, url, 0);
+});
+
+QUnit.test("blob check for short over-end", function(assert) {
+  var done = assert.async();
+  var url = 'https://upload.wikimedia.org/wikipedia/commons/d/d0/Ja-Godzilla.oga';
+  var x = new XMLHttpRequest();
+  x.responseType = 'arraybuffer';
+  x.onload = function() {
+    done();
+    var buf = x.response;
+    var blob = new Blob([buf], {
+      type: 'video/ogg'
+    });
+    var blobUrl = URL.createObjectURL(blob);
+
+    doOverflowTest(assert, blobUrl, 0);
+  };
+  x.open('GET', url);
+  x.send();
 });

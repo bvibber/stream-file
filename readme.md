@@ -8,6 +8,9 @@ Copyright 2013-2017 by Brion Vibber <brion@pobox.com>. Provided under MIT licens
 
 https://github.com/brion/stream-file
 
+0.2.3 - 2017-12-08
+* Fix for reading last chunk of blob URLs in Safari.
+
 0.2.2 - 2017-12-05
 * Fixed incorrect whitespace scrubbing on headers
 
