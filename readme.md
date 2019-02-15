@@ -4,9 +4,13 @@ StreamFile
 Handy class / XHR wrapper for streaming large files from the web.
 Supports chunking and seeking within large files using the HTTP 'Range' header.
 
-Copyright 2013-2017 by Brion Vibber <brion@pobox.com>. Provided under MIT license.
+Copyright 2013-2019 by Brion Vibber <brion@pobox.com>. Provided under MIT license.
 
 https://github.com/brion/stream-file
+
+0.2.4 - 2019-02-15
+* Allow non-progressive download path if `progressive: false` passed in options.
+    * This works around rare data corruption issues with binary string, but won't return data until each chunk is complete.
 
 0.2.3 - 2017-12-08
 * Fix for reading last chunk of blob URLs in Safari.

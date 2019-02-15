@@ -3,8 +3,10 @@
 const MozChunkedBackend = require('./moz-chunked-backend.js');
 const MSStreamBackend = require('./msstream-backend.js');
 const BinaryStringBackend = require('./binary-string-backend.js');
+const ArrayBufferBackend = require('./arraybuffer-backend.js');
 
 function autoselect() {
+  // Only include progressive-capable for now
   if (MozChunkedBackend.supported()) {
     return MozChunkedBackend;
   } else if (BinaryStringBackend.supported()) {
@@ -19,6 +21,9 @@ function autoselect() {
 let backendClass = null;
 
 function instantiate(options) {
+  if (options.progressive === false) {
+    return new ArrayBufferBackend(options);
+  }
   if (!backendClass) {
     backendClass = autoselect();
   }

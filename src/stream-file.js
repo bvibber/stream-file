@@ -23,6 +23,7 @@ class StreamFile {
     url='',
     chunkSize=1 * 1024 * 1024,
     cacheSize=0,
+    progressive=true
   }) {
     // InputStream public API
     this.length = -1;
@@ -31,6 +32,7 @@ class StreamFile {
     this.seekable = false;
     this.buffering = false;
     this.seeking = false;
+    this.progressive = progressive;
 
     Object.defineProperties(this, {
       /**
@@ -141,7 +143,8 @@ class StreamFile {
             url: this.url,
             offset: this._cache.writeOffset,
             length: writable,
-            cachever: this._cachever
+            cachever: this._cachever,
+            progressive: this.progressive
           });
 
           let oncomplete = null;
