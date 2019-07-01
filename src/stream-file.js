@@ -23,7 +23,8 @@ class StreamFile {
     url='',
     chunkSize=1 * 1024 * 1024,
     cacheSize=0,
-    progressive=true
+    progressive=true,
+    readAhead=true
   }) {
     // InputStream public API
     this.length = -1;
@@ -33,6 +34,7 @@ class StreamFile {
     this.buffering = false;
     this.seeking = false;
     this.progressive = progressive;
+    this.allowReadAhead = readAhead;
 
     Object.defineProperties(this, {
       /**
@@ -191,7 +193,7 @@ class StreamFile {
             this._cachever++;
           });
 
-          backend.load();
+          backend.load().catch(reject);
         }
       }
     });
@@ -204,7 +206,7 @@ class StreamFile {
    */
   _readAhead() {
     return new Promise((resolve, reject) => {
-      if (this._backend || this.eof) {
+      if (this._backend || this.eof || !this.allowReadAhead) {
         // do nothing
         resolve();
       } else {
