@@ -121,8 +121,8 @@ class StreamFile {
         const cache = this._cache;
         const max = this._chunkSize;
 
-        // Seek forward to the next unread point, up to chunk size
-        const readable = cache.bytesReadable(max);
+        // Seek forward to the next unread point
+        const readable = cache.bytesReadable();
         const readTail = cache.readOffset + readable;
         cache.seekWrite(readTail);
 
