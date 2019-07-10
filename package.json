@@ -4,13 +4,13 @@
   "description": "Buffered streaming HTTP fetch abstraction",
   "main": "lib/stream-file.js",
   "files": [
-    "lib/",
+    "src/",
     "dist/",
     "readme.md",
     "COPYING"
   ],
   "directories": {
-    "lib": "lib",
+    "src": "src",
     "test": "test"
   },
   "dependencies": {},
