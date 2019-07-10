@@ -2,7 +2,7 @@
   "name": "stream-file",
   "version": "0.2.4",
   "description": "Buffered streaming HTTP fetch abstraction",
-  "main": "lib/stream-file.js",
+  "main": "src/stream-file.js",
   "files": [
     "src/",
     "dist/",
