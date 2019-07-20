@@ -230,7 +230,7 @@ class StreamFile {
     return new Promise((resolve, reject) => {
       if (!this.loaded || this.buffering || this.seeking) {
         throw new Error('invalid state');
-      } else if (offset !== (offset | 0) || offset < 0) {
+      } else if (offset === undefined || offset === null || offset < 0) {
         throw new Error('invalid input');
       } else if (this.length >= 0 && offset > this.length) {
         throw new Error('seek past end of file');
