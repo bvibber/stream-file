@@ -1,5 +1,6 @@
 "use strict";
 
+const FetchBackend = require('./fetch-backend.js');
 const MozChunkedBackend = require('./moz-chunked-backend.js');
 const MSStreamBackend = require('./msstream-backend.js');
 const BinaryStringBackend = require('./binary-string-backend.js');
@@ -7,7 +8,9 @@ const ArrayBufferBackend = require('./arraybuffer-backend.js');
 
 function autoselect() {
   // Only include progressive-capable for now
-  if (MozChunkedBackend.supported()) {
+  if (FetchBackend.supported()) {
+    return FetchBackend;
+  } else if (MozChunkedBackend.supported()) {
     return MozChunkedBackend;
   } else if (BinaryStringBackend.supported()) {
     return BinaryStringBackend;
