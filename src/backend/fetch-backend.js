@@ -142,7 +142,7 @@ class FetchBackend extends Backend {
 
 FetchBackend.supported = function() {    
     try {
-        return typeof(window['fetch']) == 'function';
+        return typeof(globalThis['fetch']) == 'function';
     } catch(e) {
         return false;
     }
