@@ -1,10 +1,10 @@
 "use strict"
 
-const Backend = require('./backend.js');
+const XHRBackend = require('./xhr-backend.js');
 
 const type = 'ms-stream';
 
-class MSStreamBackend extends Backend {
+class MSStreamBackend extends XHRBackend {
 
   constructor(options) {
     super(options);
