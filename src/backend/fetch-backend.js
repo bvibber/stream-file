@@ -78,8 +78,12 @@ class FetchBackend extends Backend {
 
         return new Promise((resolve, reject) => {
 
+            const abortController = new AbortController();
+            const signal = abortController.signal;
+
             let oncomplete = null;
             this._onAbort = (err) => {
+                abortController.abort();
                 oncomplete();
                 reject(err);
             };
@@ -93,8 +97,8 @@ class FetchBackend extends Backend {
                 oncomplete();
                 resolve();
             };
-            
-            fetch(req).then(response => {
+                        
+            fetch(req, {signal}).then(response => {
                 if (response.status == 206) {
                     // Partial content -- we are streamable
                     const foundPosition = getFetchRangeStart(response);
@@ -136,8 +140,7 @@ class FetchBackend extends Backend {
     onFetchLoad() {
         this.eof = true;
         this.emit('done');
-    }
-
+    }    
 }
 
 FetchBackend.supported = function() {    
