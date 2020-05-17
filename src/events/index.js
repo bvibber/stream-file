@@ -13,7 +13,7 @@ class TinyEvents {
   off(name, handler) {
     const l = (this._e[name] || []);
     const i = l.indexOf(handler);
-    if (handler >= 0) {
+    if (i >= 0) {
       l.splice(i, 1);
     }
   }
