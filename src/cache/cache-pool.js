@@ -20,7 +20,8 @@ const CacheItem = require('./cache-item.js');
  */
 class CachePool {
   constructor({
-    cacheSize=0
+    cacheSize=0,
+    chunkSize=0
   }={}) {
     const eof = new CacheItem({eof: true});
     this.head = eof;
@@ -30,6 +31,7 @@ class CachePool {
     this.writeOffset = 0;
     this.writeCursor = eof;
     this.cacheSize = cacheSize;
+    this.chunkSize = chunkSize;
   }
 
   /**

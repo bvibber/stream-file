@@ -51,6 +51,15 @@ class StreamFile {
         get: function() {
           return this.length === this._cache.readOffset;
         }
+      },
+
+      /**
+       * Max amount of data to keep buffered in memory for seeks
+       */
+      _chunkSize: {
+        get: function() {
+          return this._cache.chunkSize;
+        }
       }
     });
 
@@ -60,12 +69,12 @@ class StreamFile {
 
     // Private
     this._cache = new CachePool({
-      cacheSize
+      cacheSize,
+      chunkSize
     });
 
     this._backend = null;
     this._cachever = 0;
-    this._chunkSize = chunkSize;
   }
 
   /**
