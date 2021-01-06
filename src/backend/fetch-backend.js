@@ -89,7 +89,7 @@ class FetchBackend extends Backend {
             };
 
             const checkError = (err) => {
-                this.onFetchError();
+                this.onFetchError(err);
                 oncomplete();
                 reject(err);
               };
@@ -133,8 +133,8 @@ class FetchBackend extends Backend {
         });
     }
         
-    onFetchError() {
-        this.emit('error');        
+    onFetchError(err) {
+        this.emit('error', err);
     }
     
     onFetchLoad() {
