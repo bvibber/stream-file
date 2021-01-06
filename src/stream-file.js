@@ -23,7 +23,8 @@ class StreamFile {
     url='',
     chunkSize=1 * 1024 * 1024,
     cacheSize=0,
-    progressive=true
+    progressive=true,
+    readAhead=true
   }) {
     // InputStream public API
     this.length = -1;
@@ -33,6 +34,7 @@ class StreamFile {
     this.buffering = false;
     this.seeking = false;
     this.progressive = progressive;
+    this.allowReadAhead = readAhead;
 
     Object.defineProperties(this, {
       /**
@@ -119,8 +121,8 @@ class StreamFile {
         const cache = this._cache;
         const max = this._chunkSize;
 
-        // Seek forward to the next unread point, up to chunk size
-        const readable = cache.bytesReadable(max);
+        // Seek forward to the next unread point
+        const readable = cache.bytesReadable();
         const readTail = cache.readOffset + readable;
         cache.seekWrite(readTail);
 
@@ -191,7 +193,7 @@ class StreamFile {
             this._cachever++;
           });
 
-          backend.load();
+          backend.load().catch(reject);
         }
       }
     });
@@ -204,7 +206,7 @@ class StreamFile {
    */
   _readAhead() {
     return new Promise((resolve, reject) => {
-      if (this._backend || this.eof) {
+      if (this._backend || this.eof || !this.allowReadAhead) {
         // do nothing
         resolve();
       } else {
@@ -228,7 +230,7 @@ class StreamFile {
     return new Promise((resolve, reject) => {
       if (!this.loaded || this.buffering || this.seeking) {
         throw new Error('invalid state');
-      } else if (offset !== (offset | 0) || offset < 0) {
+      } else if (offset === undefined || offset === null || offset < 0) {
         throw new Error('invalid input');
       } else if (this.length >= 0 && offset > this.length) {
         throw new Error('seek past end of file');
