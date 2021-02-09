@@ -1,7 +1,6 @@
 "use strict";
 
 const MozChunkedBackend = require('./moz-chunked-backend.js');
-const MSStreamBackend = require('./msstream-backend.js');
 const BinaryStringBackend = require('./binary-string-backend.js');
 const ArrayBufferBackend = require('./arraybuffer-backend.js');
 
@@ -11,8 +10,6 @@ function autoselect() {
     return MozChunkedBackend;
   } else if (BinaryStringBackend.supported()) {
     return BinaryStringBackend;
-  } else if (MSStreamBackend.supported()) {
-    return MSStreamBackend;
   } else {
     return null;
   }

@@ -43,11 +43,6 @@ module.exports = function(grunt) {
         files: {
           'dist/stream-file.js': ['lib/stream-file.js']
         }
-      },
-      polyfill: {
-        files: {
-          'dist/es6-promise.js': ['lib/es6-promise.js']
-        }
       }
     },
     uglify: {
@@ -58,25 +53,12 @@ module.exports = function(grunt) {
         files: {
           'dist/stream-file.min.js': ['dist/stream-file.js']
         }
-      },
-      polyfill: {
-        options: {
-          sourceMap: true
-        },
-        files: {
-          'dist/es6-promise.min.js': ['dist/es6-promise.js']
-        }
       }
     },
     compress: {
       dist: {
         files: {
           'dist/stream-file.min.js.gz': ['dist/stream-file.min.js']
-        }
-      },
-      polyfill: {
-        files: {
-          'dist/es6-promise.min.js.gz': ['dist/es6-promise.min.js']
         }
       }
     }

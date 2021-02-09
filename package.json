@@ -1,6 +1,6 @@
 {
   "name": "stream-file",
-  "version": "0.2.4",
+  "version": "0.3.0",
   "description": "Buffered streaming HTTP fetch abstraction",
   "main": "lib/stream-file.js",
   "files": [
@@ -18,7 +18,6 @@
     "assert": "^1.4.1",
     "babel-preset-es2015": "^6.16.0",
     "browserify-derequire": "^0.9.4",
-    "es6-promise": "^4.0.3",
     "grunt": "^1.0.1",
     "grunt-babel": "^6.0.0",
     "grunt-browserify": "^5.0.0",

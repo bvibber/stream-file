@@ -4,9 +4,13 @@ StreamFile
 Handy class / XHR wrapper for streaming large files from the web.
 Supports chunking and seeking within large files using the HTTP 'Range' header.
 
-Copyright 2013-2019 by Brion Vibber <brion@pobox.com>. Provided under MIT license.
+Copyright 2013-2021 by Brion Vibber <brion@pobox.com>. Provided under MIT license.
 
 https://github.com/brion/stream-file
+
+0.3.0 - 2021-02-09
+* Remove old IE-specific code paths
+* Remove Promise shim; native Promise or manual use of a shim is now required
 
 0.2.4 - 2019-02-15
 * Allow non-progressive download path if `progressive: false` passed in options.
@@ -51,7 +55,7 @@ todo:
 
 # Requirements
 
-stream-file depends on the ES6 Promise class; you can use a polyfill such as [es6-promise](https://www.npmjs.com/package/es6-promise) when deploying to older browsers. A prebuilt copy of es6-promise is included in the dist directory for the browser distribution, or may be included in your application code for webpack/browserify users.
+stream-file depends on the ES6 Promise class; you can use a polyfill such as [es6-promise](https://www.npmjs.com/package/es6-promise) when deploying to older browsers.
 
 # Usage
 
@@ -383,7 +387,7 @@ The stream-file package is meant to be used in web client code via a package bun
 
 Although compiled to ES5, a few ECMAScript 2015 features are used such as the Promise class. If you're targeting older browser versions, you will need to convert the code to ES5 and add a Promise polyfill.
 
-Pre-built bundles of the StreamFile class and the es6-promise shim are available in the dist subdirectory.
+A pre-built bundle of the StreamFile class in available in the dist subdirectory.
 
 ## node
 
@@ -392,19 +396,16 @@ CLI/server-side node will be supported in a future release.
 # Backends
 
 Backend selection is automatic and cannot yet be overridden or plugged.
-There are currently three XMLHttpRequest-based backends for in-browser usage:
+There are currently two XMLHttpRequest-based backends for in-browser usage:
 
-* 'ms-stream' for IE and Edge: reads on demand via MSStream & MSStreamReader
 * 'moz-chunked-arraybuffer' for Firefox: progressive download via ArrayBuffer chunks
 * 'binary string' for Safari, Chrome: progressive download via string chunks
 
 The binary string backend uses more memory to buffer data.
 
-Currently the ms-stream backend may be slightly buggier than the others.
-
 # License
 
-Copyright (c) 2013-2017 Brion Vibber and other contributors
+Copyright (c) 2013-2021 Brion Vibber and other contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
