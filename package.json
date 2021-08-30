@@ -46,5 +46,6 @@
   "bugs": {
     "url": "https://github.com/brion/stream-file/issues"
   },
-  "homepage": "https://github.com/brion/stream-file#readme"
+  "homepage": "https://github.com/brion/stream-file#readme",
+  "types": "./src/stream-file.d.ts"
 }
