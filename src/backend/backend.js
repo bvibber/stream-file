@@ -106,6 +106,7 @@ class Backend extends TinyEvents {
     this.eof = false;
     this.bytesRead = 0;
     this.xhr = new XMLHttpRequest();
+    this.xhr.withCredentials = true;
   }
 
   load() {
